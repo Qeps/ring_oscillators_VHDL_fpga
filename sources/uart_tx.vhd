@@ -38,52 +38,76 @@ entity uart_tx is
     );
 end uart_tx;
 
-architecture BEHAV of uart_tx is
-    signal cnt     : integer range 0 to clks_per_bit-1 := 0;
-    signal busy    : std_logic := '0';
-    signal bit_cnt : unsigned(3 downto 0) := (others => '0');
-    signal tx_buf  : std_logic_vector(7 downto 0) := (others => '0');
+architecture RTL of uart_tx is
+    type t_state is (
+        IDLE,
+        START_BIT,
+        DATA_BITS,
+        STOP_BIT
+    );
+    signal state        : t_state := IDLE;
+    signal clk_cnt      : integer range 0 to clks_per_bit-1 := 0;
+    signal bit_idx      : integer range 0 to 7 := 0;
+    signal tx_buf       : std_logic_vector(7 downto 0) := (others => '0');
 begin
 
 process(clk)
 begin
     if rising_edge(clk) then
         if rst_n = '0' then
-            tx_out   <= '1';
-            busy     <= '0';
-            tx_ready <= '1';
-            cnt      <= 0;
-            bit_cnt  <= (others => '0');
-
-        elsif busy = '0' then
+            state    <= IDLE;
             tx_out   <= '1';
             tx_ready <= '1';
-            if data_valid = '1' then
-                tx_buf   <= data_in;
-                busy     <= '1';
-                tx_ready <= '0';
-                bit_cnt  <= (others => '0');
-                cnt      <= clks_per_bit-1;
-            end if;
+            clk_cnt  <= 0;
+            bit_idx  <= 0;
 
         else
-            if cnt = 0 then
-                if bit_cnt = 0 then
-                    tx_out  <= '0';
-                    bit_cnt <= bit_cnt + 1;
-                elsif bit_cnt = 9 then
+            case state is
+                when IDLE =>
+                    tx_out   <= '1';
+                    tx_ready <= '1';
+                    clk_cnt  <= 0;
+                    bit_idx  <= 0;
+
+                    if data_valid = '1' then
+                        tx_buf  <= data_in;
+                        tx_ready <= '0';
+                        state   <= START_BIT;
+                    end if;
+                when START_BIT =>
+                    tx_out <= '0';
+
+                    if clk_cnt < clks_per_bit-1 then
+                        clk_cnt <= clk_cnt + 1;
+                    else
+                        clk_cnt <= 0;
+                        state   <= DATA_BITS;
+                    end if;
+                when DATA_BITS =>
+                    tx_out <= tx_buf(bit_idx);
+                    if clk_cnt < clks_per_bit-1 then
+                        clk_cnt <= clk_cnt + 1;
+                    else
+                        clk_cnt <= 0;
+
+                        if bit_idx < 7 then
+                            bit_idx <= bit_idx + 1;
+                        else
+                            bit_idx <= 0;
+                            state   <= STOP_BIT;
+                        end if;
+                    end if;
+                when STOP_BIT =>
                     tx_out <= '1';
-                    busy   <= '0';
-                else
-                    tx_out  <= tx_buf(to_integer(bit_cnt) - 1);
-                    bit_cnt <= bit_cnt + 1;
-                end if;
-                cnt <= clks_per_bit-1;
-            else
-                cnt <= cnt - 1;
-            end if;
+                    if clk_cnt < clks_per_bit-1 then
+                        clk_cnt <= clk_cnt + 1;
+                    else
+                        clk_cnt <= 0;
+                        state   <= IDLE;
+                    end if;
+            end case;
         end if;
     end if;
 end process;
 
-end BEHAV;
+end RTL;

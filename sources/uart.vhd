@@ -55,7 +55,7 @@ U1: shift_reg
 
 U2: uart_tx
     generic map (
-        clks_per_bit => 8
+        clks_per_bit => 868
     )
     port map (
         clk        => clk,

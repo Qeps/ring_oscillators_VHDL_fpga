@@ -1,0 +1,26 @@
+Do realizacji projektu wybrano środowisko Xilinx Vivado Design Suite,
+które stanowi podstawowe narzędzie do projektowania, syntezy oraz
+implementacji układów FPGA firmy Xilinx. Vivado umożliwia opis logiki
+sprzętowej w językach HDL, przeprowadzenie syntezy logicznej,
+rozmieszczenia i trasowania zasobów, a także generację pliku konfiguracyjnego
+(bitstream) i programowanie układu docelowego.
+
+Istotną zaletą środowiska Vivado jest pełna kontrola nad strukturą
+projektowanego układu oraz dostęp do raportów czasowych i zasobowych,
+co ma kluczowe znaczenie w przypadku oscylatorów pierścieniowych.
+Niewielkie różnice w opóźnieniach propagacji bramek oraz sposób
+rozmieszczenia logiki w strukturze FPGA mają bezpośredni wpływ na
+właściwości generowanego sygnału i poziom entropii.
+
+Jako platformę sprzętową wybrano płytkę rozwojową Arty S7--25 z układem
+Xilinx Spartan-7. Jest to nowoczesny układ FPGA przeznaczony do aplikacji
+o umiarkowanej złożoności, oferujący dobrą relację dostępnych zasobów
+logicznych do poboru mocy i kosztu. Rodzina Spartan-7 zapewnia stabilne
+parametry czasowe oraz powtarzalne zachowanie struktur logicznych, co
+jest istotne w kontekście implementacji generatorów liczb losowych.
+
+Dodatkowym argumentem przemawiającym za wyborem płytki Arty S7--25 jest jej
+szerokie wsparcie narzędziowe oraz dostępność dokumentacji i przykładów
+projektowych. Płytka posiada standardowy interfejs JTAG do programowania
+i debugowania, co umożliwia wygodne testowanie implementacji oraz
+obserwację zachowania układu w warunkach rzeczywistych.

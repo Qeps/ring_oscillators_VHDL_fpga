@@ -1,0 +1,31 @@
+Oscylator pierścieniowy (ang. \emph{ring oscillator}) jest jednym z
+najprostszych układów generujących sygnał okresowy w technologiach
+cyfrowych. Składa się z nieparzystej liczby inwerterów połączonych
+szeregowo w zamkniętą pętlę, gdzie wyjście ostatniego elementu jest
+podłączone do wejścia pierwszego.
+
+Zasada działania jest intuicyjna: sygnał logiczny krążący w pętli jest
+kolejno odwracany przez każdy inwerter. Ponieważ liczba inwerterów jest
+nieparzysta, układ nie może osiągnąć stabilnego stanu logicznego.
+Zamiast tego powstaje ciągła oscylacja pomiędzy stanem wysokim i niskim.
+Częstotliwość tych oscylacji zależy głównie od sumy opóźnień propagacji
+poszczególnych bramek.
+
+Istotną cechą oscylatora pierścieniowego jest jego podatność na zjawiska
+fizyczne zachodzące w strukturze krzemowej. Szumy termiczne, fluktuacje
+napięcia zasilania, zmiany temperatury oraz lokalne różnice
+technologiczne powodują losowe zmiany opóźnień propagacji. Skutkiem tego
+jest nieregularność okresu sygnału, określana jako jitter, który stanowi
+praktyczne źródło entropii w wielu konstrukcjach TRNG.\cite{sunar2006provably,saarinen2021entropy}
+
+Losowy charakter jittera sprawia, że oscylator pierścieniowy może pełnić
+rolę źródła entropii w cyfrowych generatorach liczb losowych. W praktyce
+entropia pozyskiwana jest poprzez próbkowanie sygnału oscylatora lub
+porównywanie faz i częstotliwości wielu niezależnych oscylatorów.
+Dobór parametrów próbkowania i architektury ma bezpośredni wpływ na
+entropię na bit i odporność na zakłócenia.\cite{ma2014entropy}
+
+Dzięki prostocie, niewielkim wymaganiom sprzętowym i dobrej skalowalności
+w nowoczesnych procesach technologicznych, oscylatory pierścieniowe są
+powszechnie wykorzystywane jako elementy generatorów liczb losowych w
+układach FPGA, mikrokontrolerach oraz systemach kryptograficznych.

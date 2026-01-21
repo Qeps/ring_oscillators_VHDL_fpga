@@ -1,0 +1,33 @@
+W niniejszym podrozdziale przedstawiono implementację protokołu UART, przeznaczoną do 
+transmisji ciągu losowych bitów generowanych przez moduł \texttt{trng\_ro}. Celem tego etapu 
+projektu jest umożliwienie niezależnej, asynchronicznej komunikacji pomiędzy układem FPGA a 
+systemem zewnętrznym, w którym dane losowe mogą być dalej przetwarzane lub analizowane.
+
+\begin{lstlisting}[language=VHDL,
+caption={Moduł bufora UART (uart\_buff.vhdl)},
+label={lst:uart_buff}]
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity uart_buff is
+    generic (
+        
+    );
+    port (
+        
+    );
+end uart_buff;
+\end{lstlisting}
+
+Listing~\ref{lst:uart_buff} przedstawia architekturę pośrednią. Z uwagi na bitowy charakter 
+wyjścia generatora \texttt{trng\_ro} moduł \texttt{uart\_buff} stopniowo agreguje pojedyncze bity
+do postaci bajtów, zgodnej z formatem transmisji UART. Rozwiązanie to oddziela 
+warstwę generacji entropii od warstwy komunikacyjnej, upraszczając zarówno projekt, jak i 
+późniejszą weryfikację poszczególnych bloków funkcjonalnych.
+Implementacja została podzielona na dwa współpracujące moduły: bufor danych odpowiedzialny 
+za gromadzenie bitów losowych oraz nadajnik UART realizujący właściwy proces transmisji 
+szeregowej. Takie rozdzielenie funkcjonalności pozwala na zachowanie czytelnej struktury 
+projektu oraz ułatwia ewentualną rozbudowę lub modyfikację parametrów transmisji w dalszych 
+etapach pracy.
+W kolejnych fragmentach podrozdziału zaprezentowano implementację poszczególnych modułów 
+w języku VHDL, a następnie omówiono ich rolę w kontekście całego toru transmisji danych losowych.

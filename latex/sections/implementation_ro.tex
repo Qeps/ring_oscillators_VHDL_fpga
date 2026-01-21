@@ -1,0 +1,147 @@
+W niniejszym podrozdziale przedstawiono implementację testową oscylatora 
+pierścieniowego oraz nadrzędnego modułu generatora liczb losowych,
+opracowaną w języku VHDL i przeznaczoną do syntezy w strukturze FPGA.
+
+\begin{lstlisting}[language=VHDL,
+caption={Moduł oscylatora pierścieniowego (ring\_oscillator.vhdl)},
+label={lst:ring_oscillator}]
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity ring_oscillator is
+    generic ( INVERTERS_NUM : integer := 5 );                        
+    port    ( ro_out : out std_logic       );                              
+end ring_oscillator;
+
+architecture rtl of ring_oscillator is
+    signal    chain               : std_logic_vector(INVERTERS_NUM-1 downto 0);
+    attribute dont_touch          : boolean;                              
+    attribute dont_touch of chain : signal is true;                       
+begin
+    chain(0) <= not chain(INVERTERS_NUM-1);                              
+    gen_chain : for i in 1 to INVERTERS_NUM-1 generate 
+        chain(i) <= not chain(i-1);
+    end generate;
+    ro_out <= chain(INVERTERS_NUM-1);
+end rtl;
+\end{lstlisting}
+
+Listing~\ref{lst:ring_oscillator} przedstawia prostą, parametryzowaną implementację
+oscylatora pierścieniowego w języku VHDL. Zastosowane rozwiązanie odwzorowuje klasyczną 
+ideę oscylatora pierścieniowego znaną z elektroniki cyfrowej: nieparzystą liczbę inwerterów
+połączonych szeregowo w pętlę zwrotną, w której brak stabilnego stanu logicznego wymusza ciągłe przełączanie.
+Rdzeniem projektu jest wektor sygnałów \texttt{chain} którego długość jest określona parametrem
+generycznym \texttt{INVERTERS\_NUM}. Każdy element tego wektora odpowiada jednemu stopniowi inwersji.
+Pierwszy stopień otrzymuje na wejście zanegowany sygnał z ostatniego elementu łańcucha,
+co zamyka pętlę sprzężenia zwrotnego. Kolejne stopnie realizują prostą inwersję sygnału
+z poprzedniego etapu.
+Kluczowym elementem implementacyjnym jest użycie atrybutu \texttt{dont\_touch}, przypisanego do 
+sygnału \texttt{chain}. Atrybut ten informuje narzędzia syntezy\cite{amd_vivado_donttouch}, 
+że pętla kombinacyjna nie jest błędem projektowym, lecz zamierzoną strukturą funkcjonalną. 
+Bez tej deklaracji optymalizator mógłby usunąć lub uprościć logikę, traktując ją jako zbędną 
+lub niepoprawną. W praktyce atrybut zwiększa szansę zachowania fizycznej struktury pierścienia 
+w docelowym układzie FPGA, co jest warunkiem powstania oscylacji.
+Sygnał wyjściowy \texttt{ro\_out} jest bezpośrednio pobierany z ostatniego stopnia łańcucha inwerterów.
+Jego częstotliwość zależy od liczby stopni inwersji oraz opóźnień propagacji w danej technologii 
+sprzętowej. Dzięki użyciu parametru generycznego możliwa jest łatwa modyfikacja liczby inwerterów,
+a tym samym regulacja częstotliwości oscylatora bez ingerencji w strukturę kodu.
+Całość architektury ma charakter czysto kombinacyjny i świadomie narusza klasyczne zasady
+projektowania synchronicznego, co czyni ją przykładem konstrukcji niskopoziomowej,
+silnie zależnej od właściwości fizycznych układu docelowego, a nie tylko od opisu logicznego.
+
+\begin{lstlisting}[language=VHDL,
+caption={Moduł generatora liczb losowych oparty na oscylatorach pierścieniowych (\texttt{trng\_ro.vhdl})},
+label={lst:trng_ro}]
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity trng_ro is
+    generic (
+        NUM_RO    : integer := 8;
+        RO_STAGES : integer := 5
+    );
+    port (
+        clk        : in  std_logic;
+        rst_n      : in  std_logic;
+        random_bit : out std_logic
+    );
+end trng_ro;
+
+architecture rtl of trng_ro is
+
+    component ring_oscillator is
+        generic ( INVERTERS_NUM : integer := 5 );
+        port    ( ro_out        : out std_logic );
+    end component;
+
+    signal ro_vector : std_logic_vector(NUM_RO-1 downto 0);
+    signal xor_raw   : std_logic;
+    signal sync_1    : std_logic;
+    signal sync_2    : std_logic;
+
+    attribute dont_touch              : boolean;
+    attribute dont_touch of ro_vector : signal is true;
+
+    function xor_reduce(s : std_logic_vector) return std_logic is
+        variable r : std_logic := '0';
+    begin
+        for i in s'range loop
+            r := r xor s(i);
+        end loop;
+        return r;
+    end function;
+
+begin
+    gen_ro : for i in 0 to NUM_RO-1 generate
+        ro_inst : ring_oscillator
+            generic map ( INVERTERS_NUM => RO_STAGES )
+            port map    ( ro_out        => ro_vector(i) );
+    end generate;
+
+    xor_raw <= xor_reduce(ro_vector);
+
+    sample_and_output_random_bit : process(clk, rst_n)
+    begin
+        if rst_n = '0' then
+            sync_1     <= '0';
+            sync_2     <= '0';
+            random_bit <= '0';
+        elsif rising_edge(clk) then
+            sync_1     <= xor_raw;
+            sync_2     <= sync_1;
+            random_bit <= sync_2;
+        end if;
+    end process;
+
+end rtl;
+\end{lstlisting}
+
+Listing~\ref{lst:trng_ro} przedstawia nadrzędny moduł generatora liczb losowych opartego na zespole
+oscylatorów pierścieniowych. Moduł realizuje architekturę TRNG, w której źródłem entropii są 
+fluktuacje czasowe i jitter wielu niezależnych oscylatorów, a ich próbki są synchronizowane 
+zegarem systemowym.
+
+Parametry generyczne \texttt{NUM\_RO} oraz \texttt{RO\_STAGES} umożliwiają odpowiednio konfigurację 
+liczby instancji oscylatorów pierścieniowych oraz liczby stopni inwersji w każdym z nich. Pozwala 
+to na łatwe dostosowanie charakterystyk generatora, takich jak poziom entropii czy pobór zasobów 
+logicznych, do wymagań aplikacji oraz technologii docelowej.
+
+Wyjścia wszystkich oscylatorów są gromadzone w wektorze \texttt{ro\_vector}, który został oznaczony 
+atrybutem \texttt{dont\_touch}. Zapobiega to ingerencji narzędzi syntezy w strukturę fizyczną 
+zespołu oscylatorów, co ma kluczowe znaczenie dla zachowania ich niezależności czasowej oraz 
+właściwości losowych.
+
+W celu wstępnego „wybielenia” sygnału losowego zastosowano funkcję redukującą XOR, która łączy 
+stany logiczne wszystkich oscylatorów w pojedynczy sygnał \texttt{xor\_raw}. Takie podejście 
+zmniejsza wpływ ewentualnych korelacji pomiędzy pojedynczymi oscylatorami i poprawia statystyczne 
+właściwości wyjścia.
+
+Próbowanie sygnału losowego odbywa się w procesie synchronicznym względem zegara \texttt{clk}. 
+Dwustopniowy rejestr synchronizujący pełni podwójną rolę: pierwszy przerzutnik próbuje 
+asynchroniczny sygnał pochodzący z oscylatorów, natomiast drugi stabilizuje jego wartość, 
+ograniczając propagację metastabilności do dalszej logiki. Wyjście generatora \texttt{random\_bit} 
+jest pobierane z drugiego stopnia synchronizacji.
+
+Przedstawiona architektura stanowi typowy przykład konstrukcji TRNG silnie zależnej od właściwości 
+fizycznych układu FPGA, w której losowość nie wynika z algorytmu, lecz z niedeterministycznych 
+zjawisk czasowych zachodzących w strukturze sprzętowej.

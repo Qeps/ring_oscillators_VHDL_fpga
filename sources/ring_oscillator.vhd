@@ -18,8 +18,8 @@ end ring_oscillator;
 
 architecture rtl of ring_oscillator is
     signal    chain                 : std_logic_vector(INVERTERS_NUM-1 downto 0); -- Vector of signals, each element represents one inverter stage
-    attribute dont_touch            : boolean;                                    -- Attribute declaration for synthesis tools
-    attribute dont_touch of chain   : signal is true;                             -- Feedback loop should not be optimized or removed
+    attribute dont_touch            : string;                                     -- Attribute declaration for synthesis tools
+    attribute dont_touch of chain   : signal is "true";                           -- Feedback loop should not be optimized or removed
 begin
     chain(0) <= not chain(INVERTERS_NUM-1);                                       -- First inverter takes the inverted value of the last stage
     gen_chain : for i in 1 to INVERTERS_NUM-1 generate 

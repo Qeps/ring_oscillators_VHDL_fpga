@@ -21,8 +21,8 @@ architecture rtl of trng_ro is
     signal sync_1           : std_logic;                                        -- First sampling flip-flop
     signal sync_2           : std_logic;                                        -- Second sampling flip-flop
     
-    attribute dont_touch              : boolean;                                -- dont_touch is a strict directive telling synthesis to                                             
-    attribute dont_touch of ro_vector : signal is true;                         -- preserve the hardware exactly as written.
+    attribute dont_touch              : string;                                -- dont_touch is a strict directive telling synthesis to                                             
+    attribute dont_touch of ro_vector : signal is "true";                      -- preserve the hardware exactly as written.
     
     function xor_reduce(s : std_logic_vector) return std_logic is
         variable r : std_logic := '0';

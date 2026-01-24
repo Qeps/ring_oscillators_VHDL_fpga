@@ -15,8 +15,8 @@ signal random_bit_s : std_logic;
 
 component trng_ro
     generic (
-        NUM_RO    : integer := 8;
-        RO_STAGES : integer := 5
+        NUM_RO     : integer := 8,
+        SAMPLE_DIV : integer := 32
     );
     port (
         clk        : in  std_logic;
@@ -38,8 +38,8 @@ begin
 
 U_TRNG : trng_ro
     generic map (
-        NUM_RO    => 8,
-        RO_STAGES => 5
+        NUM_RO     => 8,
+        SAMPLE_DIV => 32
     )
     port map (
         clk        => clk,

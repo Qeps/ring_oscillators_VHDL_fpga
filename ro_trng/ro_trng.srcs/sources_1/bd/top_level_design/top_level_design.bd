@@ -1,0 +1,313 @@
+{
+  "design": {
+    "design_info": {
+      "boundary_crc": "0xF778962D17429E93",
+      "device": "xc7s25csga324-1",
+      "gen_directory": "../../../../ro_trng.gen/sources_1/bd/top_level_design",
+      "name": "top_level_design",
+      "rev_ctrl_bd_flag": "RevCtrlBdOff",
+      "synth_flow_mode": "Hierarchical",
+      "tool_version": "2025.2",
+      "validated": "true"
+    },
+    "design_tree": {
+      "ro_bank_0": "",
+      "ro_sampler_0": "",
+      "uart_tx_0": "",
+      "rst_l": "",
+      "enable": "",
+      "xlslice_0": "",
+      "bit_to_ascii_0": ""
+    },
+    "ports": {
+      "uart_tx": {
+        "direction": "O"
+      },
+      "CLK100MHZ": {
+        "type": "clk",
+        "direction": "I",
+        "parameters": {
+          "CLK_DOMAIN": {
+            "value": "top_level_design_CLK100MHZ",
+            "value_src": "default"
+          },
+          "FREQ_HZ": {
+            "value": "100000000"
+          },
+          "FREQ_TOLERANCE_HZ": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "INSERT_VIP": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "PHASE": {
+            "value": "0.0",
+            "value_src": "default"
+          }
+        }
+      },
+      "led0": {
+        "direction": "O",
+        "left": "0",
+        "right": "0"
+      }
+    },
+    "components": {
+      "ro_bank_0": {
+        "vlnv": "xilinx.com:module_ref:ro_bank:1.0",
+        "ip_revision": "1",
+        "xci_name": "top_level_design_ro_bank_0_0",
+        "xci_path": "ip\\top_level_design_ro_bank_0_0\\top_level_design_ro_bank_0_0.xci",
+        "inst_hier_path": "ro_bank_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "ro_bank",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "enable": {
+            "direction": "I"
+          },
+          "ro_vec": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          }
+        }
+      },
+      "ro_sampler_0": {
+        "vlnv": "xilinx.com:module_ref:ro_sampler:1.0",
+        "ip_revision": "1",
+        "xci_name": "top_level_design_ro_sampler_0_0",
+        "xci_path": "ip\\top_level_design_ro_sampler_0_0\\top_level_design_ro_sampler_0_0.xci",
+        "inst_hier_path": "ro_sampler_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "ro_sampler",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "top_level_design_CLK100MHZ",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst_l": {
+            "direction": "I"
+          },
+          "ro_vec": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "ro_sync": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          }
+        }
+      },
+      "uart_tx_0": {
+        "vlnv": "xilinx.com:module_ref:uart_tx:1.0",
+        "ip_revision": "1",
+        "xci_name": "top_level_design_uart_tx_0_0",
+        "xci_path": "ip\\top_level_design_uart_tx_0_0\\top_level_design_uart_tx_0_0.xci",
+        "inst_hier_path": "uart_tx_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "uart_tx",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "top_level_design_CLK100MHZ",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst_l": {
+            "direction": "I"
+          },
+          "data_in": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "data_valid": {
+            "direction": "I"
+          },
+          "tx_ready": {
+            "direction": "O"
+          },
+          "tx_out": {
+            "direction": "O"
+          }
+        }
+      },
+      "rst_l": {
+        "vlnv": "xilinx.com:ip:xlconstant:1.1",
+        "ip_revision": "10",
+        "xci_name": "top_level_design_xlconstant_0_0",
+        "xci_path": "ip\\top_level_design_xlconstant_0_0\\top_level_design_xlconstant_0_0.xci",
+        "inst_hier_path": "rst_l",
+        "has_run_ip_tcl": "true"
+      },
+      "enable": {
+        "vlnv": "xilinx.com:ip:xlconstant:1.1",
+        "ip_revision": "10",
+        "xci_name": "top_level_design_xlconstant_0_1",
+        "xci_path": "ip\\top_level_design_xlconstant_0_1\\top_level_design_xlconstant_0_1.xci",
+        "inst_hier_path": "enable",
+        "has_run_ip_tcl": "true"
+      },
+      "xlslice_0": {
+        "vlnv": "xilinx.com:ip:xlslice:1.0",
+        "ip_revision": "5",
+        "xci_name": "top_level_design_xlslice_0_0",
+        "xci_path": "ip\\top_level_design_xlslice_0_0\\top_level_design_xlslice_0_0.xci",
+        "inst_hier_path": "xlslice_0",
+        "has_run_ip_tcl": "true",
+        "parameters": {
+          "DIN_WIDTH": {
+            "value": "8"
+          }
+        }
+      },
+      "bit_to_ascii_0": {
+        "vlnv": "xilinx.com:module_ref:bit_to_ascii:1.0",
+        "ip_revision": "1",
+        "xci_name": "top_level_design_bit_to_ascii_0_0",
+        "xci_path": "ip\\top_level_design_bit_to_ascii_0_0\\top_level_design_bit_to_ascii_0_0.xci",
+        "inst_hier_path": "bit_to_ascii_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "bit_to_ascii",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "top_level_design_CLK100MHZ",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst_l": {
+            "direction": "I"
+          },
+          "bit_in": {
+            "direction": "I"
+          },
+          "tx_ready": {
+            "direction": "I"
+          },
+          "data_out": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          },
+          "data_valid": {
+            "direction": "O"
+          }
+        }
+      }
+    },
+    "nets": {
+      "CLK100MHZ_1": {
+        "ports": [
+          "CLK100MHZ",
+          "uart_tx_0/clk",
+          "ro_sampler_0/clk",
+          "bit_to_ascii_0/clk"
+        ]
+      },
+      "bit_to_ascii_0_data_out": {
+        "ports": [
+          "bit_to_ascii_0/data_out",
+          "uart_tx_0/data_in"
+        ]
+      },
+      "bit_to_ascii_0_data_valid": {
+        "ports": [
+          "bit_to_ascii_0/data_valid",
+          "uart_tx_0/data_valid"
+        ]
+      },
+      "enable_dout": {
+        "ports": [
+          "enable/dout",
+          "ro_bank_0/enable"
+        ]
+      },
+      "ro_bank_0_ro_vec": {
+        "ports": [
+          "ro_bank_0/ro_vec",
+          "ro_sampler_0/ro_vec"
+        ]
+      },
+      "ro_sampler_0_ro_sync": {
+        "ports": [
+          "ro_sampler_0/ro_sync",
+          "xlslice_0/Din"
+        ]
+      },
+      "rst_l_dout": {
+        "ports": [
+          "rst_l/dout",
+          "ro_sampler_0/rst_l",
+          "uart_tx_0/rst_l",
+          "bit_to_ascii_0/rst_l"
+        ]
+      },
+      "uart_tx_0_tx_out": {
+        "ports": [
+          "uart_tx_0/tx_out",
+          "uart_tx"
+        ]
+      },
+      "uart_tx_0_tx_ready": {
+        "ports": [
+          "uart_tx_0/tx_ready",
+          "bit_to_ascii_0/tx_ready"
+        ]
+      },
+      "xlslice_0_Dout": {
+        "ports": [
+          "xlslice_0/Dout",
+          "led0",
+          "bit_to_ascii_0/bit_in"
+        ]
+      }
+    }
+  }
+}

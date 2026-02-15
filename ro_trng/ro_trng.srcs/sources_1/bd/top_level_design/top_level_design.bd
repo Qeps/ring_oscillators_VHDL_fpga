@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0xF778962D17429E93",
+      "boundary_crc": "0x2DE073EA128B96B7",
       "device": "xc7s25csga324-1",
       "gen_directory": "../../../../ro_trng.gen/sources_1/bd/top_level_design",
       "name": "top_level_design",
@@ -16,8 +16,8 @@
       "uart_tx_0": "",
       "rst_l": "",
       "enable": "",
-      "xlslice_0": "",
-      "bit_to_ascii_0": ""
+      "bit_to_ascii_0": "",
+      "entropy_mixer_0": ""
     },
     "ports": {
       "uart_tx": {
@@ -47,11 +47,6 @@
             "value_src": "default"
           }
         }
-      },
-      "led0": {
-        "direction": "O",
-        "left": "0",
-        "right": "0"
       }
     },
     "components": {
@@ -182,19 +177,6 @@
         "inst_hier_path": "enable",
         "has_run_ip_tcl": "true"
       },
-      "xlslice_0": {
-        "vlnv": "xilinx.com:ip:xlslice:1.0",
-        "ip_revision": "5",
-        "xci_name": "top_level_design_xlslice_0_0",
-        "xci_path": "ip\\top_level_design_xlslice_0_0\\top_level_design_xlslice_0_0.xci",
-        "inst_hier_path": "xlslice_0",
-        "has_run_ip_tcl": "true",
-        "parameters": {
-          "DIN_WIDTH": {
-            "value": "8"
-          }
-        }
-      },
       "bit_to_ascii_0": {
         "vlnv": "xilinx.com:module_ref:bit_to_ascii:1.0",
         "ip_revision": "1",
@@ -240,6 +222,46 @@
             "direction": "O"
           }
         }
+      },
+      "entropy_mixer_0": {
+        "vlnv": "xilinx.com:module_ref:entropy_mixer:1.0",
+        "ip_revision": "1",
+        "xci_name": "top_level_design_entropy_mixer_0_0",
+        "xci_path": "ip\\top_level_design_entropy_mixer_0_0\\top_level_design_entropy_mixer_0_0.xci",
+        "inst_hier_path": "entropy_mixer_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "entropy_mixer",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "top_level_design_CLK100MHZ",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst_l": {
+            "direction": "I"
+          },
+          "ro_sync": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "bit_out": {
+            "direction": "O"
+          }
+        }
       }
     },
     "nets": {
@@ -248,7 +270,8 @@
           "CLK100MHZ",
           "uart_tx_0/clk",
           "ro_sampler_0/clk",
-          "bit_to_ascii_0/clk"
+          "bit_to_ascii_0/clk",
+          "entropy_mixer_0/clk"
         ]
       },
       "bit_to_ascii_0_data_out": {
@@ -269,6 +292,12 @@
           "ro_bank_0/enable"
         ]
       },
+      "entropy_mixer_0_raw_bit": {
+        "ports": [
+          "entropy_mixer_0/bit_out",
+          "bit_to_ascii_0/bit_in"
+        ]
+      },
       "ro_bank_0_ro_vec": {
         "ports": [
           "ro_bank_0/ro_vec",
@@ -278,7 +307,7 @@
       "ro_sampler_0_ro_sync": {
         "ports": [
           "ro_sampler_0/ro_sync",
-          "xlslice_0/Din"
+          "entropy_mixer_0/ro_sync"
         ]
       },
       "rst_l_dout": {
@@ -286,7 +315,8 @@
           "rst_l/dout",
           "ro_sampler_0/rst_l",
           "uart_tx_0/rst_l",
-          "bit_to_ascii_0/rst_l"
+          "bit_to_ascii_0/rst_l",
+          "entropy_mixer_0/rst_l"
         ]
       },
       "uart_tx_0_tx_out": {
@@ -299,13 +329,6 @@
         "ports": [
           "uart_tx_0/tx_ready",
           "bit_to_ascii_0/tx_ready"
-        ]
-      },
-      "xlslice_0_Dout": {
-        "ports": [
-          "xlslice_0/Dout",
-          "led0",
-          "bit_to_ascii_0/bit_in"
         ]
       }
     }

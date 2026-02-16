@@ -1,3 +1,13 @@
+\chapter{Generator liczb losowych w technice cyfrowej}
+
+Celem niniejszego rozdziału jest omówienie koncepcji cyfrowego generatora
+liczb losowych, ze szczególnym uwzględnieniem źródeł entropii oraz
+sprzętowej realizacji układu. Przedstawiono rolę oscylatora
+pierścieniowego jako elementu wprowadzającego niedeterministyczność oraz
+znaczenie platformy FPGA dla jakości i powtarzalności implementacji.
+
+\section{Oscylator pierścieniowy jako źródło entropii}
+
 Oscylator pierścieniowy (ang. \emph{ring oscillator}) jest jednym z
 najprostszych układów generujących sygnał okresowy w technologiach
 cyfrowych. Składa się z nieparzystej liczby inwerterów połączonych
@@ -29,3 +39,25 @@ Dzięki prostocie, niewielkim wymaganiom sprzętowym i dobrej skalowalności
 w nowoczesnych procesach technologicznych, oscylatory pierścieniowe są
 powszechnie wykorzystywane jako elementy generatorów liczb losowych w
 układach FPGA, mikrokontrolerach oraz systemach kryptograficznych.
+
+\section{Implementacja generatora w strukturach FPGA}
+
+Układy FPGA (ang. \emph{Field Programmable Gate Array}) stanowią
+elastyczną platformę do implementacji cyfrowych generatorów liczb
+losowych, w tym konstrukcji bazujących na jitterze oscylatorów
+pierścieniowych. Architektura oparta na programowalnych blokach logicznych
+i rekonfigurowalnych połączeniach umożliwia bezpośrednią realizację
+struktur sprzętowych i ich równoległe zwielokrotnienie.\cite{peetermans2019portable}
+
+W przeciwieństwie do rozwiązań programowych, implementacja generatora
+w strukturze FPGA pozwala na kontrolę nad topologią, sposobem próbkowania
+oraz logiką post-processingu. Jest to istotne, ponieważ zarówno jakość
+źródła entropii, jak i mechanizm jej ekstrakcji wpływają na końcową
+losowość strumienia bitów.\cite{ma2014entropy}
+
+W praktyce platformy FPGA są często wybierane w zastosowaniach
+wymagających wysokiej przepustowości i deterministycznej latencji,
+a także tam, gdzie istotna jest przenośność rozwiązania pomiędzy
+różnymi rodzinami układów. Przykładem są współczesne konstrukcje TRNG
+projektowane tak, aby zachowywać właściwości statystyczne niezależnie
+od producenta i szczegółów technologii.\cite{matuszewski2024startstop}

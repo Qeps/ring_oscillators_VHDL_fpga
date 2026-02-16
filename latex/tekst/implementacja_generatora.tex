@@ -1,3 +1,44 @@
+\chapter{Implementacja generatora na platformie FPGA}
+
+W niniejszym rozdziale przedstawiono praktyczną implementację cyfrowego
+generatora liczb losowych wykorzystującego oscylator pierścieniowy jako
+źródło entropii. Opis obejmuje wybór środowiska projektowego oraz
+platformy sprzętowej, a następnie proces syntezy, implementacji i
+uruchomienia układu na fizycznej płytce FPGA. Celem rozdziału jest
+przedstawienie pełnego przepływu projektowego, od opisu sprzętowego do
+działającej realizacji.
+
+\section{Środowisko projektowe Vivado i wybór platformy sprzętowej}
+
+Do realizacji projektu wybrano środowisko Xilinx Vivado Design Suite,
+które stanowi podstawowe narzędzie do projektowania, syntezy oraz
+implementacji układów FPGA firmy Xilinx. Vivado umożliwia opis logiki
+sprzętowej w językach HDL, przeprowadzenie syntezy logicznej,
+rozmieszczenia i trasowania zasobów, a także generację pliku konfiguracyjnego
+(bitstream) i programowanie układu docelowego.
+
+Istotną zaletą środowiska Vivado jest pełna kontrola nad strukturą
+projektowanego układu oraz dostęp do raportów czasowych i zasobowych,
+co ma kluczowe znaczenie w przypadku oscylatorów pierścieniowych.
+Niewielkie różnice w opóźnieniach propagacji bramek oraz sposób
+rozmieszczenia logiki w strukturze FPGA mają bezpośredni wpływ na
+właściwości generowanego sygnału i poziom entropii.
+
+Jako platformę sprzętową wybrano płytkę rozwojową Arty S7--25 z układem
+Xilinx Spartan-7. Jest to nowoczesny układ FPGA przeznaczony do aplikacji
+o umiarkowanej złożoności, oferujący dobrą relację dostępnych zasobów
+logicznych do poboru mocy i kosztu. Rodzina Spartan-7 zapewnia stabilne
+parametry czasowe oraz powtarzalne zachowanie struktur logicznych, co
+jest istotne w kontekście implementacji generatorów liczb losowych.
+
+Dodatkowym argumentem przemawiającym za wyborem płytki Arty S7--25 jest jej
+szerokie wsparcie narzędziowe oraz dostępność dokumentacji i przykładów
+projektowych. Płytka posiada standardowy interfejs JTAG do programowania
+i debugowania, co umożliwia wygodne testowanie implementacji oraz
+obserwację zachowania układu w warunkach rzeczywistych.
+
+\section{Implementacja oscylatora pierścieniowego w języku VHDL}
+
 W niniejszym podrozdziale przedstawiono implementację testową oscylatora 
 pierścieniowego oraz nadrzędnego modułu generatora liczb losowych,
 opracowaną w języku VHDL i przeznaczoną do syntezy w strukturze FPGA.
@@ -13,17 +54,6 @@ entity ring_oscillator is
     port    ( ro_out : out std_logic       );                              
 end ring_oscillator;
 
-architecture rtl of ring_oscillator is
-    signal    chain               : std_logic_vector(INVERTERS_NUM-1 downto 0);
-    attribute dont_touch          : boolean;                              
-    attribute dont_touch of chain : signal is true;                       
-begin
-    chain(0) <= not chain(INVERTERS_NUM-1);                              
-    gen_chain : for i in 1 to INVERTERS_NUM-1 generate 
-        chain(i) <= not chain(i-1);
-    end generate;
-    ro_out <= chain(INVERTERS_NUM-1);
-end rtl;
 \end{lstlisting}
 
 Listing~\ref{lst:ring_oscillator} przedstawia prostą, parametryzowaną implementację
@@ -67,53 +97,6 @@ entity trng_ro is
     );
 end trng_ro;
 
-architecture rtl of trng_ro is
-
-    component ring_oscillator is
-        generic ( INVERTERS_NUM : integer := 5 );
-        port    ( ro_out        : out std_logic );
-    end component;
-
-    signal ro_vector : std_logic_vector(NUM_RO-1 downto 0);
-    signal xor_raw   : std_logic;
-    signal sync_1    : std_logic;
-    signal sync_2    : std_logic;
-
-    attribute dont_touch              : boolean;
-    attribute dont_touch of ro_vector : signal is true;
-
-    function xor_reduce(s : std_logic_vector) return std_logic is
-        variable r : std_logic := '0';
-    begin
-        for i in s'range loop
-            r := r xor s(i);
-        end loop;
-        return r;
-    end function;
-
-begin
-    gen_ro : for i in 0 to NUM_RO-1 generate
-        ro_inst : ring_oscillator
-            generic map ( INVERTERS_NUM => RO_STAGES )
-            port map    ( ro_out        => ro_vector(i) );
-    end generate;
-
-    xor_raw <= xor_reduce(ro_vector);
-
-    sample_and_output_random_bit : process(clk, rst_n)
-    begin
-        if rst_n = '0' then
-            sync_1     <= '0';
-            sync_2     <= '0';
-            random_bit <= '0';
-        elsif rising_edge(clk) then
-            sync_1     <= xor_raw;
-            sync_2     <= sync_1;
-            random_bit <= sync_2;
-        end if;
-    end process;
-
-end rtl;
 \end{lstlisting}
 
 Listing~\ref{lst:trng_ro} przedstawia nadrzędny moduł generatora liczb losowych opartego na zespole
@@ -145,3 +128,39 @@ jest pobierane z drugiego stopnia synchronizacji.
 Przedstawiona architektura stanowi typowy przykład konstrukcji TRNG silnie zależnej od właściwości 
 fizycznych układu FPGA, w której losowość nie wynika z algorytmu, lecz z niedeterministycznych 
 zjawisk czasowych zachodzących w strukturze sprzętowej.
+
+\section{Implementacja protokołu UART do transmisji ciągu losowych bitow}
+
+W niniejszym podrozdziale przedstawiono implementację protokołu UART, przeznaczoną do 
+transmisji ciągu losowych bitów generowanych przez moduł \texttt{trng\_ro}. Celem tego etapu 
+projektu jest umożliwienie niezależnej, asynchronicznej komunikacji pomiędzy układem FPGA a 
+systemem zewnętrznym, w którym dane losowe mogą być dalej przetwarzane lub analizowane.
+
+\begin{lstlisting}[language=VHDL,
+caption={Moduł bufora UART (uart\_buff.vhdl)},
+label={lst:uart_buff}]
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity uart_buff is
+    generic (
+        
+    );
+    port (
+        
+    );
+end uart_buff;
+\end{lstlisting}
+
+Listing~\ref{lst:uart_buff} przedstawia architekturę pośrednią. Z uwagi na bitowy charakter 
+wyjścia generatora \texttt{trng\_ro} moduł \texttt{uart\_buff} stopniowo agreguje pojedyncze bity
+do postaci bajtów, zgodnej z formatem transmisji UART. Rozwiązanie to oddziela 
+warstwę generacji entropii od warstwy komunikacyjnej, upraszczając zarówno projekt, jak i 
+późniejszą weryfikację poszczególnych bloków funkcjonalnych.
+Implementacja została podzielona na dwa współpracujące moduły: bufor danych odpowiedzialny 
+za gromadzenie bitów losowych oraz nadajnik UART realizujący właściwy proces transmisji 
+szeregowej. Takie rozdzielenie funkcjonalności pozwala na zachowanie czytelnej struktury 
+projektu oraz ułatwia ewentualną rozbudowę lub modyfikację parametrów transmisji w dalszych 
+etapach pracy.
+W kolejnych fragmentach podrozdziału zaprezentowano implementację poszczególnych modułów 
+w języku VHDL, a następnie omówiono ich rolę w kontekście całego toru transmisji danych losowych.

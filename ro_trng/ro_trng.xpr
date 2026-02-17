@@ -321,9 +321,7 @@
     </Run>
     <Run Id="top_level_design_bit_to_ascii_0_0_synth_1" Type="Ft3:Synth" SrcSet="top_level_design_bit_to_ascii_0_0" Part="xc7s25csga324-1" ConstrsSet="top_level_design_bit_to_ascii_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/top_level_design_bit_to_ascii_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/top_level_design_bit_to_ascii_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025"/>
         <Step Id="synth_design"/>
       </Strategy>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
@@ -332,9 +330,7 @@
     </Run>
     <Run Id="top_level_design_entropy_mixer_0_0_synth_1" Type="Ft3:Synth" SrcSet="top_level_design_entropy_mixer_0_0" Part="xc7s25csga324-1" ConstrsSet="top_level_design_entropy_mixer_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/top_level_design_entropy_mixer_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/top_level_design_entropy_mixer_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025"/>
         <Step Id="synth_design"/>
       </Strategy>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
@@ -411,9 +407,7 @@
     </Run>
     <Run Id="top_level_design_bit_to_ascii_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7s25csga324-1" ConstrsSet="top_level_design_bit_to_ascii_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="top_level_design_bit_to_ascii_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/top_level_design_bit_to_ascii_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/top_level_design_bit_to_ascii_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -430,9 +424,7 @@
     </Run>
     <Run Id="top_level_design_entropy_mixer_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7s25csga324-1" ConstrsSet="top_level_design_entropy_mixer_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="top_level_design_entropy_mixer_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/top_level_design_entropy_mixer_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/top_level_design_entropy_mixer_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

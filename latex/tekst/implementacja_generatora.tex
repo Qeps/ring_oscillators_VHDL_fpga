@@ -49,10 +49,37 @@ label={lst:ring_oscillator}]
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
-entity ring_oscillator is
-    generic ( INVERTERS_NUM : integer := 5 );                        
-    port    ( ro_out : out std_logic       );                              
-end ring_oscillator;
+entity ring_osc is
+    generic (
+        STAGES : positive := 7
+    );
+    port (
+        enable : in  std_logic;
+        ro_out : out std_logic
+    );
+    attribute dont_touch : string;
+    attribute dont_touch of ring_osc : entity is "yes";
+end ring_osc;
+
+architecture RTL of ring_osc is
+
+    signal w : std_logic_vector(STAGES-1 downto 0);
+
+    attribute keep              : string;
+    attribute dont_touch of w   : signal is "yes";
+    attribute keep       of w   : signal is "true";
+    attribute dont_touch of RTL : architecture is "yes";
+begin
+
+    w(0) <= not w(STAGES-1);
+
+    gen_inv : for i in 1 to STAGES-1 generate
+        w(i) <= not w(i-1);
+    end generate;
+
+    ro_out <= w(STAGES-1) when enable = '1' else '0';
+
+end RTL;
 
 \end{lstlisting}
 
@@ -60,16 +87,16 @@ Listing~\ref{lst:ring_oscillator} przedstawia prostą, parametryzowaną implemen
 oscylatora pierścieniowego w języku VHDL. Zastosowane rozwiązanie odwzorowuje klasyczną 
 ideę oscylatora pierścieniowego znaną z elektroniki cyfrowej: nieparzystą liczbę inwerterów
 połączonych szeregowo w pętlę zwrotną, w której brak stabilnego stanu logicznego wymusza ciągłe przełączanie.
-Rdzeniem projektu jest wektor sygnałów \texttt{chain} którego długość jest określona parametrem
-generycznym \texttt{INVERTERS\_NUM}. Każdy element tego wektora odpowiada jednemu stopniowi inwersji.
+Rdzeniem projektu jest wektor sygnałów \texttt{w} którego długość jest określona parametrem
+generycznym \texttt{STAGES}. Każdy element tego wektora odpowiada jednemu stopniowi inwersji.
 Pierwszy stopień otrzymuje na wejście zanegowany sygnał z ostatniego elementu łańcucha,
 co zamyka pętlę sprzężenia zwrotnego. Kolejne stopnie realizują prostą inwersję sygnału
 z poprzedniego etapu.
-Kluczowym elementem implementacyjnym jest użycie atrybutu \texttt{dont\_touch}, przypisanego do 
-sygnału \texttt{chain}. Atrybut ten informuje narzędzia syntezy\cite{amd_vivado_donttouch}, 
+Kluczowym elementem implementacyjnym jest użycie atrybutów \texttt{dont\_touch} oraz \texttt{keep},
+przypisanych do sygnału \texttt{w}. Atrybuty te informują narzędzia syntezy\cite{amd_vivado_donttouch}, 
 że pętla kombinacyjna nie jest błędem projektowym, lecz zamierzoną strukturą funkcjonalną. 
 Bez tej deklaracji optymalizator mógłby usunąć lub uprościć logikę, traktując ją jako zbędną 
-lub niepoprawną. W praktyce atrybut zwiększa szansę zachowania fizycznej struktury pierścienia 
+lub niepoprawną. W praktyce atrybuty zwiększa szansę zachowania fizycznej struktury pierścienia 
 w docelowym układzie FPGA, co jest warunkiem powstania oscylacji.
 Sygnał wyjściowy \texttt{ro\_out} jest bezpośrednio pobierany z ostatniego stopnia łańcucha inwerterów.
 Jego częstotliwość zależy od liczby stopni inwersji oraz opóźnień propagacji w danej technologii 
@@ -79,88 +106,179 @@ Całość architektury ma charakter czysto kombinacyjny i świadomie narusza kla
 projektowania synchronicznego, co czyni ją przykładem konstrukcji niskopoziomowej,
 silnie zależnej od właściwości fizycznych układu docelowego, a nie tylko od opisu logicznego.
 
+\section{Implementacja generatora bitów losowych}
+
 \begin{lstlisting}[language=VHDL,
-caption={Moduł generatora liczb losowych oparty na oscylatorach pierścieniowych (\texttt{trng\_ro.vhdl})},
-label={lst:trng_ro}]
+caption={Moduł tworzący wiele instancji oscylatorów pierścieniowych (\texttt{ro\_bank.vhdl})},
+label={lst:ro_bank}]
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
-entity trng_ro is
-    generic (
-        NUM_RO    : integer := 8;
-        RO_STAGES : integer := 5
-    );
+entity ro_bank is
     port (
-        clk        : in  std_logic;
-        rst_n      : in  std_logic;
-        random_bit : out std_logic
+        enable : in  std_logic;
+        ro_vec : out std_logic_vector(7 downto 0)
     );
-end trng_ro;
+end ro_bank;
+
+architecture RTL of ro_bank is
+
+    attribute dont_touch : string;
+    
+    component ring_osc
+        generic (
+            STAGES : positive := 7
+        );
+        port (
+            enable : in  std_logic;
+            ro_out : out std_logic
+        );
+    end component;
+    attribute dont_touch of ring_osc : component is "yes";
+    attribute dont_touch of RTL      : architecture is "yes";
+begin
+
+    ro0 : ring_osc generic map (STAGES => 7)  port map (enable => enable, ro_out => ro_vec(0));
+    ro1 : ring_osc generic map (STAGES => 9)  port map (enable => enable, ro_out => ro_vec(1));
+    ro2 : ring_osc generic map (STAGES => 11) port map (enable => enable, ro_out => ro_vec(2));
+    ro3 : ring_osc generic map (STAGES => 13) port map (enable => enable, ro_out => ro_vec(3));
+    ro4 : ring_osc generic map (STAGES => 15) port map (enable => enable, ro_out => ro_vec(4));
+    ro5 : ring_osc generic map (STAGES => 17) port map (enable => enable, ro_out => ro_vec(5));
+    ro6 : ring_osc generic map (STAGES => 21) port map (enable => enable, ro_out => ro_vec(6));
+    ro7 : ring_osc generic map (STAGES => 25) port map (enable => enable, ro_out => ro_vec(7));
+    
+end RTL;
 
 \end{lstlisting}
 
-Listing~\ref{lst:trng_ro} przedstawia nadrzędny moduł generatora liczb losowych opartego na zespole
-oscylatorów pierścieniowych. Moduł realizuje architekturę TRNG, w której źródłem entropii są 
-fluktuacje czasowe i jitter wielu niezależnych oscylatorów, a ich próbki są synchronizowane 
-zegarem systemowym.
+Listing~\ref{lst:ro_bank} przedstawia moduł tworzący wektor sygnałów logicznych z ośmiu instancji
+oscylatorów pierścieniowych. Każdy z oscylatorów ma inną liczbę inwerterów. Różna liczba stopni 
+przekłada się na różne częstotliwości pracy poszczególnych oscylatorów. W praktyce oznacza to, 
+że każdy sygnał w wektorze \texttt{ro\_vec} oscyluje z inną częstotliwością nominalną, zależną od 
+sumarycznego opóźnienia propagacji w łańcuchu inwerterów. Zjawiska szumowe, fluktuacje napięcia 
+zasilania oraz lokalne różnice technologiczne powodują niewielkie, losowe zmiany tych opóźnień w czasie. 
+To właśnie te niewielkie odchylenia są źródłem entropii wykorzystywanej w generatorze.
 
-Parametry generyczne \texttt{NUM\_RO} oraz \texttt{RO\_STAGES} umożliwiają odpowiednio konfigurację 
-liczby instancji oscylatorów pierścieniowych oraz liczby stopni inwersji w każdym z nich. Pozwala 
-to na łatwe dostosowanie charakterystyk generatora, takich jak poziom entropii czy pobór zasobów 
-logicznych, do wymagań aplikacji oraz technologii docelowej.
+Atrybut \texttt{dont\_touch} został użyty zarówno dla komponentu \texttt{ring\_osc}, jak i całej architektury, 
+aby zapobiec optymalizacjom syntezatora. Bez tego narzędzie mogłoby uprościć strukturę, 
+usunąć pętle kombinacyjne lub połączyć logicznie równoważne fragmenty, co zniszczyłoby właściwości 
+oscylacyjne układu. W kontekście projektowania FPGA jest to kluczowe - generator opiera się na fizycznych 
+opóźnieniach bramek.
 
-Wyjścia wszystkich oscylatorów są gromadzone w wektorze \texttt{ro\_vector}, który został oznaczony 
-atrybutem \texttt{dont\_touch}. Zapobiega to ingerencji narzędzi syntezy w strukturę fizyczną 
-zespołu oscylatorów, co ma kluczowe znaczenie dla zachowania ich niezależności czasowej oraz 
-właściwości losowych.
-
-W celu wstępnego „wybielenia” sygnału losowego zastosowano funkcję redukującą XOR, która łączy 
-stany logiczne wszystkich oscylatorów w pojedynczy sygnał \texttt{xor\_raw}. Takie podejście 
-zmniejsza wpływ ewentualnych korelacji pomiędzy pojedynczymi oscylatorami i poprawia statystyczne 
-właściwości wyjścia.
-
-Próbowanie sygnału losowego odbywa się w procesie synchronicznym względem zegara \texttt{clk}. 
-Dwustopniowy rejestr synchronizujący pełni podwójną rolę: pierwszy przerzutnik próbuje 
-asynchroniczny sygnał pochodzący z oscylatorów, natomiast drugi stabilizuje jego wartość, 
-ograniczając propagację metastabilności do dalszej logiki. Wyjście generatora \texttt{random\_bit} 
-jest pobierane z drugiego stopnia synchronizacji.
-
-Przedstawiona architektura stanowi typowy przykład konstrukcji TRNG silnie zależnej od właściwości 
-fizycznych układu FPGA, w której losowość nie wynika z algorytmu, lecz z niedeterministycznych 
-zjawisk czasowych zachodzących w strukturze sprzętowej.
+Sygnał \texttt{enable} pełni funkcję globalnego włączenia banku oscylatorów. 
+Po jego aktywacji każda instancja zaczyna generować przebieg, którego chwilowa faza i częstotliwość 
+są w niewielkim stopniu nieprzewidywalne. Wektor \texttt{ro\_vec} stanowi więc równoległe źródło 
+ośmiu nieskorelowanych sygnałów, które w dalszych etapach mogą zostać poddane próbkowaniu i 
+obróbce (np. mieszaniu) w celu uzyskania strumienia bitów losowych.
 
 \section{Implementacja protokołu UART do transmisji ciągu losowych bitow}
 
 W niniejszym podrozdziale przedstawiono implementację protokołu UART, przeznaczoną do 
-transmisji ciągu losowych bitów generowanych przez moduł \texttt{trng\_ro}. Celem tego etapu 
+transmisji ciągu losowych bitów generowanych przez generator. Celem tego etapu 
 projektu jest umożliwienie niezależnej, asynchronicznej komunikacji pomiędzy układem FPGA a 
 systemem zewnętrznym, w którym dane losowe mogą być dalej przetwarzane lub analizowane.
 
 \begin{lstlisting}[language=VHDL,
-caption={Moduł bufora UART (uart\_buff.vhdl)},
-label={lst:uart_buff}]
+caption={Moduł UART TX (uart\_tx.vhdl)},
+label={lst:uart_tx}]
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
-entity uart_buff is
+-- clks_per_bit = CLK_FREQ / BAUD_RATE
+-- 100 MHz: 9600 baud (10417), 19200 baud (5208), 38400 baud (2604),
+--          57600 baud (1736), 115200 baud (868)
+-- 50 MHz:  9600 baud (5208),  19200 baud (2604), 38400 baud (1302),
+--          57600 baud (868),  115200 baud (434)
+-- 25 MHz:  9600 baud (2604),  19200 baud (1302), 38400 baud (651),
+--          57600 baud (434),  115200 baud (217)
+
+entity uart_tx is
     generic (
-        
+        clks_per_bit : integer := 10417
     );
     port (
-        
+        clk        : in  std_logic;
+        rst_l      : in  std_logic;
+        data_in    : in  std_logic_vector(7 downto 0);
+        data_valid : in  std_logic;
+        tx_ready   : out std_logic;
+        tx_out     : out std_logic
     );
-end uart_buff;
-\end{lstlisting}
+end uart_tx;
 
-Listing~\ref{lst:uart_buff} przedstawia architekturę pośrednią. Z uwagi na bitowy charakter 
-wyjścia generatora \texttt{trng\_ro} moduł \texttt{uart\_buff} stopniowo agreguje pojedyncze bity
-do postaci bajtów, zgodnej z formatem transmisji UART. Rozwiązanie to oddziela 
-warstwę generacji entropii od warstwy komunikacyjnej, upraszczając zarówno projekt, jak i 
-późniejszą weryfikację poszczególnych bloków funkcjonalnych.
-Implementacja została podzielona na dwa współpracujące moduły: bufor danych odpowiedzialny 
-za gromadzenie bitów losowych oraz nadajnik UART realizujący właściwy proces transmisji 
-szeregowej. Takie rozdzielenie funkcjonalności pozwala na zachowanie czytelnej struktury 
-projektu oraz ułatwia ewentualną rozbudowę lub modyfikację parametrów transmisji w dalszych 
-etapach pracy.
-W kolejnych fragmentach podrozdziału zaprezentowano implementację poszczególnych modułów 
-w języku VHDL, a następnie omówiono ich rolę w kontekście całego toru transmisji danych losowych.
+architecture RTL of uart_tx is
+    type t_state is (
+        IDLE,
+        START_BIT,
+        DATA_BITS,
+        STOP_BIT
+    );
+    signal state    : t_state := IDLE;
+    signal clk_cnt  : integer range 0 to clks_per_bit-1 := 0;
+    signal bit_idx  : integer range 0 to 7 := 0;
+    signal tx_buf   : std_logic_vector(7 downto 0) := (others => '0');
+begin
+
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst_l = '0' then
+                state    <= IDLE;
+                tx_out   <= '1';
+                tx_ready <= '1';
+                clk_cnt  <= 0;
+                bit_idx  <= 0;
+    
+            else
+                case state is
+                    when IDLE =>
+                        tx_out   <= '1';
+                        tx_ready <= '1';
+                        clk_cnt  <= 0;
+                        bit_idx  <= 0;
+    
+                        if data_valid = '1' then
+                            tx_buf  <= data_in;
+                            tx_ready <= '0';
+                            state   <= START_BIT;
+                        end if;
+                    when START_BIT =>
+                        tx_out <= '0';
+    
+                        if clk_cnt < clks_per_bit-1 then
+                            clk_cnt <= clk_cnt + 1;
+                        else
+                            clk_cnt <= 0;
+                            state   <= DATA_BITS;
+                        end if;
+                    when DATA_BITS =>
+                        tx_out <= tx_buf(bit_idx);
+                        if clk_cnt < clks_per_bit-1 then
+                            clk_cnt <= clk_cnt + 1;
+                        else
+                            clk_cnt <= 0;
+    
+                            if bit_idx < 7 then
+                                bit_idx <= bit_idx + 1;
+                            else
+                                bit_idx <= 0;
+                                state   <= STOP_BIT;
+                            end if;
+                        end if;
+                    when STOP_BIT =>
+                        tx_out <= '1';
+                        if clk_cnt < clks_per_bit-1 then
+                            clk_cnt <= clk_cnt + 1;
+                        else
+                            clk_cnt <= 0;
+                            state   <= IDLE;
+                        end if;
+                end case;
+            end if;
+        end if;
+    end process;
+
+end RTL;
+
+\end{lstlisting}

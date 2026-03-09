@@ -1,229 +1,223 @@
-﻿import math
-import time
-from collections import Counter
 from pathlib import Path
 
-import serial
+import matplotlib.pyplot as plt
+import numpy as np
 
-# User-configurable parameters
-UART_PORT = "COM11"
-UART_BAUD = 9600
-UART_BYTESIZE = serial.EIGHTBITS
-UART_PARITY = serial.PARITY_NONE
-UART_STOPBITS = serial.STOPBITS_ONE
-UART_XONXOFF = False
-UART_RTSCTS = False
-UART_DSRDTR = False
-
-TARGET_BITS = 1_000_000
-OUTPUT_PATH = Path(__file__).resolve().parent.parent / "captured_bits.txt"
-UART_TIMEOUT_S = 1.0
-READ_CHUNK_SIZE = 4096
-
-AUTOCORR_LAG = 1
-POKER_M = 4
-P_VALUE_THRESHOLD = 0.01
+from user_param import (
+    ANALYSIS_INPUT_PATH,
+    MAP2D_BINS,
+    MAX_LAG,
+    MODE,
+    OUT_PREFIX,
+    SAVE_PLOTS,
+    STEP,
+    TAU,
+    WORD_SIZE,
+)
 
 
-def capture_bits(
-    port: str,
-    baud: int,
-    target_bits: int,
-    timeout_s: float,
-    chunk_size: int,
-) -> str:
-    bits_collected = []
-    count = 0
-    last_report = 0
-    start = time.time()
+def parse_bits_line(bit_text: str, line_no: int) -> np.ndarray:
+    raw = bit_text.encode("ascii")
+    data = np.frombuffer(raw, dtype=np.uint8)
 
-    with serial.Serial(
-        port=port,
-        baudrate=baud,
-        timeout=timeout_s,
-        bytesize=UART_BYTESIZE,
-        parity=UART_PARITY,
-        stopbits=UART_STOPBITS,
-        xonxoff=UART_XONXOFF,
-        rtscts=UART_RTSCTS,
-        dsrdtr=UART_DSRDTR,
-    ) as ser:
-        while count < target_bits:
-            raw = ser.read(chunk_size)
-            if not raw:
+    valid = (data == ord("0")) | (data == ord("1"))
+    if not np.all(valid):
+        raise ValueError(f"Invalid character in input file at line {line_no}. Allowed: '0'/'1'.")
+
+    return (data - ord("0")).astype(np.uint8, copy=False)
+
+
+def load_series_from_file(path: Path) -> list[np.ndarray]:
+    if not path.exists():
+        raise FileNotFoundError(f"Input file not found: {path}")
+
+    series: list[np.ndarray] = []
+    expected_length: int | None = None
+
+    with path.open("r", encoding="ascii") as f:
+        for line_no, line in enumerate(f, start=1):
+            bit_text = line.strip()
+            if not bit_text or bit_text.startswith("#"):
                 continue
 
-            filtered = [chr(b) for b in raw if b == ord("0") or b == ord("1")]
-            if not filtered:
-                continue
+            bits = parse_bits_line(bit_text, line_no)
+            if expected_length is None:
+                expected_length = len(bits)
+            elif len(bits) != expected_length:
+                raise ValueError(
+                    "Inconsistent series length in input file: "
+                    f"line {line_no} has {len(bits)} bits, expected {expected_length}."
+                )
 
-            need = target_bits - count
-            if len(filtered) > need:
-                filtered = filtered[:need]
+            series.append(bits)
 
-            bits_collected.extend(filtered)
-            count += len(filtered)
+    if not series:
+        raise ValueError("No bit series found in input file.")
 
-            percent = int((count * 100) / target_bits)
-            if percent >= last_report + 5 or count == target_bits:
-                elapsed = time.time() - start
-                rate = count / elapsed if elapsed > 0 else 0.0
-                print(f"Progress: {count}/{target_bits} bits ({percent}%), ~{rate:.0f} bit/s")
-                last_report = percent
-
-    return "".join(bits_collected)
+    return series
 
 
-def monobit_test(bits: str) -> dict:
+def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
+    if len(bits) < max_lag + 2:
+        raise ValueError("Not enough bits for MAX_LAG.")
+
+    x = bits.astype(np.int8) * 2 - 1
+    ac = np.empty(max_lag + 1, dtype=np.float64)
+
+    for lag in range(max_lag + 1):
+        a = x[: len(x) - lag]
+        b = x[lag:]
+        ac[lag] = np.mean(a * b)
+
+    return ac
+
+
+def bits_to_words(bits: np.ndarray, word_size: int, step: int = 1) -> np.ndarray:
+    if word_size < 1 or word_size > 32:
+        raise ValueError("WORD_SIZE must be in range 1..32.")
+    if step < 1:
+        raise ValueError("STEP must be >= 1.")
+
     n = len(bits)
-    ones = bits.count("1")
-    zeros = n - ones
-    s_obs = abs(ones - zeros) / math.sqrt(n)
-    p_value = math.erfc(s_obs / math.sqrt(2.0))
-    return {
-        "n": n,
-        "zeros": zeros,
-        "ones": ones,
-        "ratio_ones": ones / n,
-        "p_value": p_value,
-        "pass": p_value >= P_VALUE_THRESHOLD,
-    }
+    if n < word_size:
+        raise ValueError("Not enough bits to build words.")
+
+    words = []
+    for i in range(0, n - word_size + 1, step):
+        word = 0
+        for j in range(word_size):
+            word = (word << 1) | int(bits[i + j])
+        words.append(word)
+
+    return np.array(words, dtype=np.uint32)
 
 
-def runs_test(bits: str) -> dict:
-    n = len(bits)
-    pi = bits.count("1") / n
-    if abs(pi - 0.5) >= 2 / math.sqrt(n):
-        return {
-            "p_value": 0.0,
-            "pass": False,
-            "reason": "Prerequisite failed: bit frequency deviation too large",
-        }
+def delay_pairs(words: np.ndarray, tau: int) -> tuple[np.ndarray, np.ndarray]:
+    if tau < 1:
+        raise ValueError("TAU must be >= 1.")
+    if len(words) <= tau:
+        raise ValueError("Not enough words for 2D delay map.")
 
-    runs = 1 + sum(1 for i in range(1, n) if bits[i] != bits[i - 1])
-    numerator = abs(runs - (2 * n * pi * (1 - pi)))
-    denominator = 2 * math.sqrt(2 * n) * pi * (1 - pi)
-    p_value = math.erfc(numerator / denominator)
-    return {
-        "runs": runs,
-        "p_value": p_value,
-        "pass": p_value >= P_VALUE_THRESHOLD,
-    }
+    return words[:-tau], words[tau:]
 
 
-def entropy_per_bit(bits: str) -> dict:
-    n = len(bits)
-    p1 = bits.count("1") / n
-    p0 = 1.0 - p1
+def plot_autocorrelation(
+    ac: np.ndarray,
+    lag_min: int,
+    lag_max: int,
+    output: Path | None = None,
+) -> None:
+    if lag_min < 1:
+        raise ValueError("lag_min must be >= 1.")
+    if lag_max < lag_min:
+        raise ValueError("lag_max must be >= lag_min.")
+    if lag_max >= len(ac):
+        raise ValueError("lag_max is out of range for autocorrelation array.")
 
-    def h(p: float) -> float:
-        return 0.0 if p <= 0.0 else -p * math.log2(p)
+    lags = np.arange(lag_min, lag_max + 1)
+    values = ac[lag_min : lag_max + 1]
 
-    entropy = h(p0) + h(p1)
-    return {
-        "entropy_bits": entropy,
-        "pass": entropy >= 0.99,
-    }
+    plt.figure(figsize=(10, 4))
+    plt.stem(lags, values)
+    plt.xlabel("Lag")
+    plt.ylabel("Autocorrelation")
+    plt.title(f"Bitstream autocorrelation (lags {lag_min}-{lag_max})")
+    plt.grid(True)
 
-
-def autocorrelation_test(bits: str, lag: int) -> dict:
-    n = len(bits)
-    if lag <= 0 or lag >= n:
-        raise ValueError(f"AUTOCORR_LAG must be in range 1..{n-1}")
-
-    mismatches = sum(1 for i in range(n - lag) if bits[i] != bits[i + lag])
-    x = abs(2 * mismatches - (n - lag)) / math.sqrt(n - lag)
-    p_value = math.erfc(x / math.sqrt(2.0))
-    return {
-        "lag": lag,
-        "mismatches": mismatches,
-        "p_value": p_value,
-        "pass": p_value >= P_VALUE_THRESHOLD,
-    }
-
-
-def poker_test(bits: str, m: int) -> dict:
-    n = len(bits)
-    k = n // m
-    if k < 5:
-        return {
-            "p_value": 0.0,
-            "pass": False,
-            "reason": f"Not enough data for m={m}",
-        }
-
-    cut = bits[: k * m]
-    blocks = [cut[i : i + m] for i in range(0, len(cut), m)]
-    counts = Counter(blocks)
-
-    stat = (2**m / k) * sum(v * v for v in counts.values()) - k
-    expected = (2**m) - 1
-    z = abs(stat - expected) / math.sqrt(2 * expected)
-    p_value = math.erfc(z / math.sqrt(2.0))
-
-    return {
-        "m": m,
-        "blocks": k,
-        "stat": stat,
-        "p_value": p_value,
-        "pass": p_value >= P_VALUE_THRESHOLD,
-    }
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output, dpi=200, bbox_inches="tight")
+    else:
+        plt.show()
 
 
-def print_result(name: str, result: dict) -> None:
-    print(f"\n[{name}]")
-    for key, value in result.items():
-        if isinstance(value, float):
-            print(f"{key}: {value:.6f}")
-        else:
-            print(f"{key}: {value}")
+def plot_delay_map_2d(
+    x: np.ndarray,
+    y: np.ndarray,
+    word_size: int,
+    tau: int,
+    bins: int | None = None,
+    output: Path | None = None,
+) -> None:
+    max_val = 2**word_size
+    if bins is None:
+        bins = min(max_val, 256)
+
+    plt.figure(figsize=(7, 7))
+    plt.hist2d(x, y, bins=bins)
+    plt.xlabel("w[n]")
+    plt.ylabel(f"w[n+{tau}]")
+    plt.title(f"2D delay map, word_size={word_size}, tau={tau}")
+    plt.colorbar(label="Count")
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output, dpi=200, bbox_inches="tight")
+    else:
+        plt.show()
+
+
+def build_plot_path(series_idx: int, suffix: str) -> Path | None:
+    if not SAVE_PLOTS:
+        return None
+    return OUT_PREFIX.parent / f"{OUT_PREFIX.name}_s{series_idx:03d}_{suffix}"
 
 
 def validate_config() -> None:
-    if TARGET_BITS <= 0:
-        raise ValueError("TARGET_BITS must be > 0")
-    if READ_CHUNK_SIZE <= 0:
-        raise ValueError("READ_CHUNK_SIZE must be > 0")
-    if UART_BAUD <= 0:
-        raise ValueError("UART_BAUD must be > 0")
-    if not UART_PORT:
-        raise ValueError("UART_PORT must not be empty")
-    if AUTOCORR_LAG <= 0:
-        raise ValueError("AUTOCORR_LAG must be > 0")
-    if POKER_M <= 0:
-        raise ValueError("POKER_M must be > 0")
+    if MAX_LAG < 1:
+        raise ValueError("MAX_LAG must be >= 1.")
+    if WORD_SIZE < 1 or WORD_SIZE > 32:
+        raise ValueError("WORD_SIZE must be in range 1..32.")
+    if TAU < 1:
+        raise ValueError("TAU must be >= 1.")
+    if MODE not in {"ac", "map2d", "all"}:
+        raise ValueError("MODE must be one of: ac, map2d, all.")
+
+
+def analyze_series(bits: np.ndarray, series_idx: int, series_count: int) -> None:
+    print(f"\nSeries {series_idx}/{series_count}: {len(bits)} bits")
+
+    if MODE in ("ac", "all"):
+        max_lag_for_series = min(MAX_LAG, len(bits) - 2)
+        if max_lag_for_series >= 1:
+            ac = autocorrelation(bits, max_lag_for_series)
+            lag_min = 1
+            lag_max = min(max_lag_for_series, 15)
+            print(f"Autocorrelation (lags {lag_min}..{lag_max}):")
+            for lag, value in enumerate(ac[lag_min : lag_max + 1], start=lag_min):
+                print(f"lag={lag:2d}, R={value:+.6f}")
+            plot_autocorrelation(
+                ac,
+                lag_min=lag_min,
+                lag_max=lag_max,
+                output=build_plot_path(series_idx, "autocorr.png"),
+            )
+        else:
+            print("Autocorrelation skipped: not enough bits.")
+
+    if MODE in ("map2d", "all"):
+        words = bits_to_words(bits, WORD_SIZE, step=STEP)
+        print(f"Built {len(words)} words of {WORD_SIZE} bits (step={STEP}).")
+        x, y = delay_pairs(words, TAU)
+        plot_delay_map_2d(
+            x,
+            y,
+            WORD_SIZE,
+            TAU,
+            bins=MAP2D_BINS,
+            output=build_plot_path(series_idx, f"map2d_tau{TAU}.png"),
+        )
 
 
 def main() -> None:
     validate_config()
 
-    print(
-        "Capture started: "
-        f"port={UART_PORT}, baud={UART_BAUD}, "
-        f"bytesize={UART_BYTESIZE}, parity={UART_PARITY}, stopbits={UART_STOPBITS}, "
-        f"xonxoff={UART_XONXOFF}, rtscts={UART_RTSCTS}, dsrdtr={UART_DSRDTR}, "
-        f"bits={TARGET_BITS}"
-    )
+    print(f"Loading captured series from: {ANALYSIS_INPUT_PATH}")
+    series = load_series_from_file(ANALYSIS_INPUT_PATH)
+    print(f"Loaded {len(series)} series, {len(series[0])} bits each.")
 
-    bits = capture_bits(
-        port=UART_PORT,
-        baud=UART_BAUD,
-        target_bits=TARGET_BITS,
-        timeout_s=UART_TIMEOUT_S,
-        chunk_size=READ_CHUNK_SIZE,
-    )
-
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(bits, encoding="ascii")
-    print(f"Saved {len(bits)} bits to: {OUTPUT_PATH}")
-
-    print("\nRunning statistical tests...")
-    print_result("Monobit", monobit_test(bits))
-    print_result("Runs", runs_test(bits))
-    print_result("Entropy", entropy_per_bit(bits))
-    print_result("Autocorrelation", autocorrelation_test(bits, AUTOCORR_LAG))
-    print_result("Poker", poker_test(bits, POKER_M))
-    print(f"\nDecision rule: pass=True when p_value >= {P_VALUE_THRESHOLD}")
+    for idx, bits in enumerate(series, start=1):
+        analyze_series(bits, idx, len(series))
 
 
 if __name__ == "__main__":

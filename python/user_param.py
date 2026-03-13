@@ -23,6 +23,7 @@ STEP: Bit step between consecutive extracted words for 2D maps.
 ANALYSIS_INPUT_PATH: Input path used by the analysis scripts.
 
 MAP2D_BINS: Number of histogram bins for 2D map (None = auto).
+BIAS_ALPHA: Significance level used by bias.py for PASS/FAIL.
 
 SAVE_PLOTS: Save plots to files when True; otherwise show interactive windows.
 OUT_PREFIX: Prefix used to build output plot filenames.
@@ -56,6 +57,7 @@ STEP = None  # None = use step equal to current word size
 ANALYSIS_INPUT_PATH = CAPTURE_OUTPUT_PATH
 
 MAP2D_BINS = None
+BIAS_ALPHA = 0.01
 
 SAVE_PLOTS = True
 OUT_PREFIX = Path(__file__).resolve().parent.parent / "results" / "uart_rng"

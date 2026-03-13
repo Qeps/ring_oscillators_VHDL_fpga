@@ -13,16 +13,14 @@ READ_CHUNK_SIZE: Number of bytes requested from UART per read call.
 UART_BIT_ORDER: Bit order used when unpacking "raw_bytes":
     - "msb": most-significant bit first in each byte.
     - "lsb": least-significant bit first in each byte.
-CAPTURE_SERIES_COUNT: Number of captured series written to output file.
-CAPTURE_BITS_PER_SERIES: Number of bits captured in each series.
+CAPTURE_BITS: Number of bits captured from UART.
 CAPTURE_OUTPUT_PATH: Output path for captured series file (one series per line).
 
 MAX_LAG: Maximum lag used in the autocorrelation calculation.
-WORD_SIZE: Number of bits grouped into one word for delay-map analysis.
-TAU: Delay (in words) between compared samples in delay maps.
-STEP: Bit step between consecutive extracted words.
-MODE: Enabled analysis path: 'ac', 'map2d', or 'all'.
-ANALYSIS_INPUT_PATH: Input path used by random_test.py.
+MAP2D_WORD_SIZES: Word sizes used for 2D delay maps.
+MAP2D_TAUS: Delay values used for 2D delay maps.
+STEP: Bit step between consecutive extracted words for 2D maps.
+ANALYSIS_INPUT_PATH: Input path used by the analysis scripts.
 
 MAP2D_BINS: Number of histogram bins for 2D map (None = auto).
 
@@ -48,15 +46,13 @@ UART_DSRDTR = False
 UART_TIMEOUT_S = 1.0
 READ_CHUNK_SIZE = 4096
 UART_BIT_ORDER = "msb"  # "msb" or "lsb"
-CAPTURE_SERIES_COUNT = 10
-CAPTURE_BITS_PER_SERIES = 1000000
+CAPTURE_BITS = 10485760
 CAPTURE_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "captured_bits.txt"
 
 MAX_LAG = 15
-WORD_SIZE = 8
-TAU = 3
-STEP = WORD_SIZE
-MODE = "all"  # "ac", "map2d", "all"
+MAP2D_WORD_SIZES = (4, 8)
+MAP2D_TAUS = tuple(range(9))
+STEP = None  # None = use step equal to current word size
 ANALYSIS_INPUT_PATH = CAPTURE_OUTPUT_PATH
 
 MAP2D_BINS = None

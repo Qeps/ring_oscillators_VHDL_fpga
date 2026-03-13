@@ -3,17 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from user_param import (
-    ANALYSIS_INPUT_PATH,
-    MAP2D_BINS,
-    MAX_LAG,
-    MODE,
-    OUT_PREFIX,
-    SAVE_PLOTS,
-    STEP,
-    TAU,
-    WORD_SIZE,
-)
+from user_param import ANALYSIS_INPUT_PATH, MAP2D_BINS, MAP2D_TAUS, MAP2D_WORD_SIZES, OUT_PREFIX, SAVE_PLOTS, STEP
 
 
 def parse_bits_line(bit_text: str, line_no: int) -> np.ndarray:
@@ -57,19 +47,10 @@ def load_series_from_file(path: Path) -> list[np.ndarray]:
     return series
 
 
-def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
-    if len(bits) < max_lag + 2:
-        raise ValueError("Not enough bits for MAX_LAG.")
-
-    x = bits.astype(np.int8) * 2 - 1
-    ac = np.empty(max_lag + 1, dtype=np.float64)
-
-    for lag in range(max_lag + 1):
-        a = x[: len(x) - lag]
-        b = x[lag:]
-        ac[lag] = np.mean(a * b)
-
-    return ac
+def build_plot_path(series_idx: int, suffix: str) -> Path | None:
+    if not SAVE_PLOTS:
+        return None
+    return OUT_PREFIX.parent / f"{OUT_PREFIX.name}_s{series_idx:03d}_{suffix}"
 
 
 def bits_to_words(bits: np.ndarray, word_size: int, step: int = 1) -> np.ndarray:
@@ -93,47 +74,21 @@ def bits_to_words(bits: np.ndarray, word_size: int, step: int = 1) -> np.ndarray
 
 
 def delay_pairs(words: np.ndarray, tau: int) -> tuple[np.ndarray, np.ndarray]:
-    if tau < 1:
-        raise ValueError("TAU must be >= 1.")
+    if tau < 0:
+        raise ValueError("TAU must be >= 0.")
     if len(words) <= tau:
         raise ValueError("Not enough words for 2D delay map.")
+    if tau == 0:
+        return words, words
 
     return words[:-tau], words[tau:]
-
-
-def plot_autocorrelation(
-    ac: np.ndarray,
-    lag_min: int,
-    lag_max: int,
-    output: Path | None = None,
-) -> None:
-    if lag_min < 1:
-        raise ValueError("lag_min must be >= 1.")
-    if lag_max < lag_min:
-        raise ValueError("lag_max must be >= lag_min.")
-    if lag_max >= len(ac):
-        raise ValueError("lag_max is out of range for autocorrelation array.")
-
-    lags = np.arange(lag_min, lag_max + 1)
-    values = ac[lag_min : lag_max + 1]
-
-    plt.figure(figsize=(10, 4))
-    plt.stem(lags, values)
-    plt.xlabel("Lag")
-    plt.ylabel("Autocorrelation")
-    plt.title(f"Bitstream autocorrelation (lags {lag_min}-{lag_max})")
-    plt.grid(True)
-
-    if output:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output, dpi=200, bbox_inches="tight")
-    else:
-        plt.show()
 
 
 def plot_delay_map_2d(
     x: np.ndarray,
     y: np.ndarray,
+    bit_count: int,
+    word_count: int,
     word_size: int,
     tau: int,
     bins: int | None = None,
@@ -147,7 +102,10 @@ def plot_delay_map_2d(
     plt.hist2d(x, y, bins=bins)
     plt.xlabel("w[n]")
     plt.ylabel(f"w[n+{tau}]")
-    plt.title(f"2D delay map, word_size={word_size}, tau={tau}")
+    plt.title(
+        f"2D delay map, word_size={word_size}, tau={tau}\n"
+        f"bits={bit_count}, words={word_count}, pairs={len(x)}"
+    )
     plt.colorbar(label="Count")
 
     if output:
@@ -157,56 +115,46 @@ def plot_delay_map_2d(
         plt.show()
 
 
-def build_plot_path(series_idx: int, suffix: str) -> Path | None:
-    if not SAVE_PLOTS:
-        return None
-    return OUT_PREFIX.parent / f"{OUT_PREFIX.name}_s{series_idx:03d}_{suffix}"
-
-
 def validate_config() -> None:
-    if MAX_LAG < 1:
-        raise ValueError("MAX_LAG must be >= 1.")
-    if WORD_SIZE < 1 or WORD_SIZE > 32:
-        raise ValueError("WORD_SIZE must be in range 1..32.")
-    if TAU < 1:
-        raise ValueError("TAU must be >= 1.")
-    if MODE not in {"ac", "map2d", "all"}:
-        raise ValueError("MODE must be one of: ac, map2d, all.")
+    if not MAP2D_WORD_SIZES:
+        raise ValueError("MAP2D_WORD_SIZES must not be empty.")
+    if not MAP2D_TAUS:
+        raise ValueError("MAP2D_TAUS must not be empty.")
+    for word_size in MAP2D_WORD_SIZES:
+        if word_size < 1 or word_size > 32:
+            raise ValueError("Each MAP2D_WORD_SIZES value must be in range 1..32.")
+    for tau in MAP2D_TAUS:
+        if tau < 0:
+            raise ValueError("Each MAP2D_TAUS value must be >= 0.")
+    if STEP is not None and STEP < 1:
+        raise ValueError("STEP must be >= 1.")
 
 
 def analyze_series(bits: np.ndarray, series_idx: int, series_count: int) -> None:
     print(f"\nSeries {series_idx}/{series_count}: {len(bits)} bits")
 
-    if MODE in ("ac", "all"):
-        max_lag_for_series = min(MAX_LAG, len(bits) - 2)
-        if max_lag_for_series >= 1:
-            ac = autocorrelation(bits, max_lag_for_series)
-            lag_min = 1
-            lag_max = min(max_lag_for_series, 15)
-            print(f"Autocorrelation (lags {lag_min}..{lag_max}):")
-            for lag, value in enumerate(ac[lag_min : lag_max + 1], start=lag_min):
-                print(f"lag={lag:2d}, R={value:+.6f}")
-            plot_autocorrelation(
-                ac,
-                lag_min=lag_min,
-                lag_max=lag_max,
-                output=build_plot_path(series_idx, "autocorr.png"),
-            )
-        else:
-            print("Autocorrelation skipped: not enough bits.")
+    total_maps = len(MAP2D_WORD_SIZES) * len(MAP2D_TAUS)
+    map_idx = 0
 
-    if MODE in ("map2d", "all"):
-        words = bits_to_words(bits, WORD_SIZE, step=STEP)
-        print(f"Built {len(words)} words of {WORD_SIZE} bits (step={STEP}).")
-        x, y = delay_pairs(words, TAU)
-        plot_delay_map_2d(
-            x,
-            y,
-            WORD_SIZE,
-            TAU,
-            bins=MAP2D_BINS,
-            output=build_plot_path(series_idx, f"map2d_tau{TAU}.png"),
-        )
+    for word_size in MAP2D_WORD_SIZES:
+        step = STEP if STEP is not None else word_size
+        words = bits_to_words(bits, word_size, step=step)
+        print(f"Built {len(words)} words of {word_size} bits (step={step}).")
+
+        for tau in MAP2D_TAUS:
+            map_idx += 1
+            x, y = delay_pairs(words, tau)
+            print(f"Generating map {map_idx}/{total_maps}: word_size={word_size}, tau={tau}")
+            plot_delay_map_2d(
+                x,
+                y,
+                bit_count=len(bits),
+                word_count=len(words),
+                word_size=word_size,
+                tau=tau,
+                bins=MAP2D_BINS,
+                output=build_plot_path(series_idx, f"map2d_w{word_size}_tau{tau}.png"),
+            )
 
 
 def main() -> None:

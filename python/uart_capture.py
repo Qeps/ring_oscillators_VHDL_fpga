@@ -5,9 +5,8 @@ import numpy as np
 import serial
 
 from user_param import (
-    CAPTURE_BITS_PER_SERIES,
+    CAPTURE_BITS,
     CAPTURE_OUTPUT_PATH,
-    CAPTURE_SERIES_COUNT,
     PROGRESS_EVERY_PERCENT,
     READ_CHUNK_SIZE,
     UART_BAUD,
@@ -42,8 +41,6 @@ def capture_one_series(
     chunk_size: int,
     bit_order: str,
     progress_every_percent: int,
-    series_idx: int,
-    series_total: int,
 ) -> np.ndarray:
     bits = np.empty(target_bits, dtype=np.uint8)
     collected = 0
@@ -68,20 +65,15 @@ def capture_one_series(
         if percent >= last_report + progress_every_percent or collected == target_bits:
             elapsed = time.time() - start
             rate = collected / elapsed if elapsed > 0 else 0.0
-            print(
-                f"Series {series_idx}/{series_total}: "
-                f"{collected}/{target_bits} bits ({percent}%), ~{rate:.0f} bit/s"
-            )
+            print(f"{collected}/{target_bits} bits ({percent}%), ~{rate:.0f} bit/s")
             last_report = percent
 
     return bits
 
 
 def validate_config() -> None:
-    if CAPTURE_SERIES_COUNT <= 0:
-        raise ValueError("CAPTURE_SERIES_COUNT must be > 0.")
-    if CAPTURE_BITS_PER_SERIES <= 0:
-        raise ValueError("CAPTURE_BITS_PER_SERIES must be > 0.")
+    if CAPTURE_BITS <= 0:
+        raise ValueError("CAPTURE_BITS must be > 0.")
     if READ_CHUNK_SIZE <= 0:
         raise ValueError("READ_CHUNK_SIZE must be > 0.")
     if UART_BAUD <= 0:
@@ -103,12 +95,12 @@ def main() -> None:
         f"port={UART_PORT}, baud={UART_BAUD}, "
         f"bytesize={UART_BYTESIZE}, parity={UART_PARITY}, stopbits={UART_STOPBITS}, "
         f"xonxoff={UART_XONXOFF}, rtscts={UART_RTSCTS}, dsrdtr={UART_DSRDTR}, "
-        f"series={CAPTURE_SERIES_COUNT}, bits_per_series={CAPTURE_BITS_PER_SERIES}, "
+        f"bits={CAPTURE_BITS}, "
         f"bit_order={UART_BIT_ORDER}"
     )
 
     total_start = time.time()
-    total_bits = CAPTURE_SERIES_COUNT * CAPTURE_BITS_PER_SERIES
+    total_bits = CAPTURE_BITS
 
     with (
         serial.Serial(
@@ -124,25 +116,19 @@ def main() -> None:
         ) as ser,
         CAPTURE_OUTPUT_PATH.open("w", encoding="ascii", newline="\n") as out_file,
     ):
-        for series_idx in range(1, CAPTURE_SERIES_COUNT + 1):
-            bits = capture_one_series(
-                ser=ser,
-                target_bits=CAPTURE_BITS_PER_SERIES,
-                chunk_size=READ_CHUNK_SIZE,
-                bit_order=UART_BIT_ORDER,
-                progress_every_percent=PROGRESS_EVERY_PERCENT,
-                series_idx=series_idx,
-                series_total=CAPTURE_SERIES_COUNT,
-            )
-            out_file.write(bits_to_ascii_line(bits))
-            out_file.write("\n")
+        bits = capture_one_series(
+            ser=ser,
+            target_bits=CAPTURE_BITS,
+            chunk_size=READ_CHUNK_SIZE,
+            bit_order=UART_BIT_ORDER,
+            progress_every_percent=PROGRESS_EVERY_PERCENT,
+        )
+        out_file.write(bits_to_ascii_line(bits))
+        out_file.write("\n")
 
     total_elapsed = time.time() - total_start
     total_rate = total_bits / total_elapsed if total_elapsed > 0 else 0.0
-    print(
-        f"Saved {CAPTURE_SERIES_COUNT} series x {CAPTURE_BITS_PER_SERIES} bits "
-        f"to: {CAPTURE_OUTPUT_PATH}"
-    )
+    print(f"Saved {CAPTURE_BITS} bits to: {CAPTURE_OUTPUT_PATH}")
     print(f"Total: {total_bits} bits in {total_elapsed:.2f}s, ~{total_rate:.0f} bit/s")
 
 

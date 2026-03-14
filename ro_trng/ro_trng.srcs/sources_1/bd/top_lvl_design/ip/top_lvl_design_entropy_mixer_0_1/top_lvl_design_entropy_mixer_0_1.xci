@@ -1,14 +1,14 @@
 {
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
-    "xci_name": "top_lvl_design_raw_bits_0_0",
-    "cell_name": "raw_bits_0",
-    "component_reference": "xilinx.com:module_ref:raw_bits:1.0",
+    "xci_name": "top_lvl_design_entropy_mixer_0_1",
+    "cell_name": "entropy_mixer_0",
+    "component_reference": "xilinx.com:module_ref:entropy_mixer:1.0",
     "ip_revision": "1",
-    "gen_directory": "../../../../../../ro_trng.gen/sources_1/bd/top_lvl_design/ip/top_lvl_design_raw_bits_0_0",
+    "gen_directory": "../../../../../../ro_trng.gen/sources_1/bd/top_lvl_design/ip/top_lvl_design_entropy_mixer_0_1",
     "parameters": {
       "component_parameters": {
-        "Component_Name": [ { "value": "top_lvl_design_raw_bits_0_0", "resolve_type": "user", "usage": "all" } ]
+        "Component_Name": [ { "value": "top_lvl_design_entropy_mixer_0_1", "resolve_type": "user", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "spartan7", "resolve_type": "generated", "usage": "all" } ],
@@ -27,7 +27,7 @@
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
         "IPREVISION": [ { "value": "1" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../../../../ro_trng.gen/sources_1/bd/top_lvl_design/ip/top_lvl_design_raw_bits_0_0" } ],
+        "OUTPUTDIR": [ { "value": "../../../../../../ro_trng.gen/sources_1/bd/top_lvl_design/ip/top_lvl_design_entropy_mixer_0_1" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "../../ipshared" } ],
         "SWVERSION": [ { "value": "2025.2" } ],
@@ -39,9 +39,9 @@
         "clk": [ { "direction": "in" } ],
         "rst_l": [ { "direction": "in" } ],
         "ro_sync": [ { "direction": "in", "size_left": "7", "size_right": "0" } ],
-        "tx_ready": [ { "direction": "in" } ],
-        "data_in": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
-        "data_valid": [ { "direction": "out" } ]
+        "uart_ready": [ { "direction": "in" } ],
+        "random_byte": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "random_valid": [ { "direction": "out" } ]
       },
       "interfaces": {
         "clk": {
@@ -65,5 +65,5 @@
       }
     }
   },
-  "checksum": "e37b0957"
+  "checksum": "6f37e60d"
 }

@@ -11,12 +11,12 @@
       "validated": "true"
     },
     "design_tree": {
-      "raw_bits_0": "",
       "ro_bank_0": "",
       "uart_tx_0": "",
       "ro_sampler_0": "",
       "rst_l": "",
-      "enable": ""
+      "enable": "",
+      "entropy_mixer_0": ""
     },
     "ports": {
       "CLK100MHZ": {
@@ -49,54 +49,6 @@
       }
     },
     "components": {
-      "raw_bits_0": {
-        "vlnv": "xilinx.com:module_ref:raw_bits:1.0",
-        "ip_revision": "1",
-        "xci_name": "top_lvl_design_raw_bits_0_0",
-        "xci_path": "ip\\top_lvl_design_raw_bits_0_0\\top_lvl_design_raw_bits_0_0.xci",
-        "inst_hier_path": "raw_bits_0",
-        "has_run_ip_tcl": "true",
-        "reference_info": {
-          "ref_type": "hdl",
-          "ref_name": "raw_bits",
-          "boundary_crc": "0x0"
-        },
-        "ports": {
-          "clk": {
-            "type": "clk",
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "100000000",
-                "value_src": "user_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "top_lvl_design_CLK100MHZ",
-                "value_src": "default_prop"
-              }
-            }
-          },
-          "rst_l": {
-            "direction": "I"
-          },
-          "ro_sync": {
-            "direction": "I",
-            "left": "7",
-            "right": "0"
-          },
-          "tx_ready": {
-            "direction": "I"
-          },
-          "data_in": {
-            "direction": "O",
-            "left": "7",
-            "right": "0"
-          },
-          "data_valid": {
-            "direction": "O"
-          }
-        }
-      },
       "ro_bank_0": {
         "vlnv": "xilinx.com:module_ref:ro_bank:1.0",
         "ip_revision": "1",
@@ -228,6 +180,54 @@
         "xci_path": "ip\\top_lvl_design_xlconstant_0_1\\top_lvl_design_xlconstant_0_1.xci",
         "inst_hier_path": "enable",
         "has_run_ip_tcl": "true"
+      },
+      "entropy_mixer_0": {
+        "vlnv": "xilinx.com:module_ref:entropy_mixer:1.0",
+        "ip_revision": "1",
+        "xci_name": "top_lvl_design_entropy_mixer_0_1",
+        "xci_path": "ip\\top_lvl_design_entropy_mixer_0_1\\top_lvl_design_entropy_mixer_0_1.xci",
+        "inst_hier_path": "entropy_mixer_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "entropy_mixer",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "top_lvl_design_CLK100MHZ",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst_l": {
+            "direction": "I"
+          },
+          "ro_sync": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "uart_ready": {
+            "direction": "I"
+          },
+          "random_byte": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          },
+          "random_valid": {
+            "direction": "O"
+          }
+        }
       }
     },
     "nets": {
@@ -236,7 +236,7 @@
           "CLK100MHZ",
           "uart_tx_0/clk",
           "ro_sampler_0/clk",
-          "raw_bits_0/clk"
+          "entropy_mixer_0/clk"
         ]
       },
       "enable_dout": {
@@ -245,15 +245,15 @@
           "ro_bank_0/enable"
         ]
       },
-      "raw_bits_0_data_in": {
+      "entropy_mixer_0_random_byte": {
         "ports": [
-          "raw_bits_0/data_in",
+          "entropy_mixer_0/random_byte",
           "uart_tx_0/data_in"
         ]
       },
-      "raw_bits_0_data_valid": {
+      "entropy_mixer_0_random_valid": {
         "ports": [
-          "raw_bits_0/data_valid",
+          "entropy_mixer_0/random_valid",
           "uart_tx_0/data_valid"
         ]
       },
@@ -266,15 +266,15 @@
       "ro_sampler_0_ro_sync": {
         "ports": [
           "ro_sampler_0/ro_sync",
-          "raw_bits_0/ro_sync"
+          "entropy_mixer_0/ro_sync"
         ]
       },
       "rst_l_dout": {
         "ports": [
           "rst_l/dout",
-          "uart_tx_0/rst_l",
-          "raw_bits_0/rst_l",
-          "ro_sampler_0/rst_l"
+          "ro_sampler_0/rst_l",
+          "entropy_mixer_0/rst_l",
+          "uart_tx_0/rst_l"
         ]
       },
       "uart_tx_0_tx_out": {
@@ -286,7 +286,7 @@
       "uart_tx_0_tx_ready": {
         "ports": [
           "uart_tx_0/tx_ready",
-          "raw_bits_0/tx_ready"
+          "entropy_mixer_0/uart_ready"
         ]
       }
     }

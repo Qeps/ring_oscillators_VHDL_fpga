@@ -19,6 +19,7 @@ main.bbl-SAVE-ERROR
 
 # --- Editor / OS ---
 .vscode/
+*__pycache__
 .idea/
 *.swp
 *.tmp

@@ -39,7 +39,7 @@ obserwację zachowania układu w warunkach rzeczywistych.
 
 \section{Implementacja oscylatora pierścieniowego w języku VHDL}
 
-W niniejszym podrozdziale przedstawiono implementację testową oscylatora 
+W niniejszym podrozdziale przedstawiono implementację oscylatora 
 pierścieniowego oraz nadrzędnego modułu generatora liczb losowych,
 opracowaną w języku VHDL i przeznaczoną do syntezy w strukturze FPGA.
 
@@ -93,9 +93,9 @@ Pierwszy stopień otrzymuje na wejście zanegowany sygnał z ostatniego elementu
 co zamyka pętlę sprzężenia zwrotnego. Kolejne stopnie realizują prostą inwersję sygnału
 z poprzedniego etapu.
 Kluczowym elementem implementacyjnym jest użycie atrybutów \texttt{dont\_touch} oraz \texttt{keep},
-przypisanych do sygnału \texttt{w}. Atrybuty te informują narzędzia syntezy\cite{amd_vivado_donttouch}, 
-że pętla kombinacyjna nie jest błędem projektowym, lecz zamierzoną strukturą funkcjonalną. 
-Bez tej deklaracji optymalizator mógłby usunąć lub uprościć logikę, traktując ją jako zbędną 
+przypisanych do sygnału \texttt{w}. Atrybuty te informują narzędzia syntezy\cite{amd_vivado_donttouch}
+\cite{amd_vivado_keep}, że pętla kombinacyjna nie jest błędem projektowym, lecz zamierzoną strukturą
+funkcjonalną. Bez tej deklaracji optymalizator mógłby usunąć lub uprościć logikę, traktując ją jako zbędną 
 lub niepoprawną. W praktyce atrybuty zwiększa szansę zachowania fizycznej struktury pierścienia 
 w docelowym układzie FPGA, co jest warunkiem powstania oscylacji.
 Sygnał wyjściowy \texttt{ro\_out} jest bezpośrednio pobierany z ostatniego stopnia łańcucha inwerterów.
@@ -107,6 +107,10 @@ projektowania synchronicznego, co czyni ją przykładem konstrukcji niskopoziomo
 silnie zależnej od właściwości fizycznych układu docelowego, a nie tylko od opisu logicznego.
 
 \section{Implementacja generatora bitów losowych}
+
+W niniejszym podrozdziale przedstawiono implementację generatora liczb losowych 
+opartego na wielu instancjach oscylatora pierścieniowego oraz modułu próbkującego.
+
 
 \begin{lstlisting}[language=VHDL,
 caption={Moduł tworzący wiele instancji oscylatorów pierścieniowych (\texttt{ro\_bank.vhdl})},
@@ -122,9 +126,7 @@ entity ro_bank is
 end ro_bank;
 
 architecture RTL of ro_bank is
-
     attribute dont_touch : string;
-    
     component ring_osc
         generic (
             STAGES : positive := 7
@@ -137,7 +139,6 @@ architecture RTL of ro_bank is
     attribute dont_touch of ring_osc : component is "yes";
     attribute dont_touch of RTL      : architecture is "yes";
 begin
-
     ro0 : ring_osc generic map (STAGES => 7)  port map (enable => enable, ro_out => ro_vec(0));
     ro1 : ring_osc generic map (STAGES => 9)  port map (enable => enable, ro_out => ro_vec(1));
     ro2 : ring_osc generic map (STAGES => 11) port map (enable => enable, ro_out => ro_vec(2));
@@ -146,9 +147,7 @@ begin
     ro5 : ring_osc generic map (STAGES => 17) port map (enable => enable, ro_out => ro_vec(5));
     ro6 : ring_osc generic map (STAGES => 21) port map (enable => enable, ro_out => ro_vec(6));
     ro7 : ring_osc generic map (STAGES => 25) port map (enable => enable, ro_out => ro_vec(7));
-    
 end RTL;
-
 \end{lstlisting}
 
 Listing~\ref{lst:ro_bank} przedstawia moduł tworzący wektor sygnałów logicznych z ośmiu instancji
@@ -170,6 +169,60 @@ Po jego aktywacji każda instancja zaczyna generować przebieg, którego chwilow
 są w niewielkim stopniu nieprzewidywalne. Wektor \texttt{ro\_vec} stanowi więc równoległe źródło 
 ośmiu nieskorelowanych sygnałów, które w dalszych etapach mogą zostać poddane próbkowaniu i 
 obróbce (np. mieszaniu) w celu uzyskania strumienia bitów losowych.
+
+\begin{lstlisting}[language=VHDL,
+caption={Moduł próbkujący (\texttt{ro\_sampler.vhdl})},
+label={lst:ro_sampler}]
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity ro_sampler is
+    port (
+        clk     : in  std_logic;
+        rst_l   : in  std_logic;
+        ro_vec  : in  std_logic_vector(7 downto 0);
+        ro_sync : out std_logic_vector(7 downto 0)
+    );
+end ro_sampler;
+
+architecture RTL of ro_sampler is
+    signal ff1, ff2 : std_logic_vector(7 downto 0);
+    attribute ASYNC_REG  : string;
+    attribute dont_touch : string;
+    attribute KEEP       : string;
+    attribute ASYNC_REG  of ff1 : signal is "TRUE";
+    attribute ASYNC_REG  of ff2 : signal is "TRUE";
+    attribute dont_touch of ff1 : signal is "yes";
+    attribute dont_touch of ff2 : signal is "yes";
+    attribute keep       of ff1 : signal is "true";
+    attribute keep       of ff2 : signal is "true";
+begin
+    process(clk, rst_l)
+    begin
+        if rst_l = '0' then
+            ff1 <= (others => '0');
+            ff2 <= (others => '0');
+        elsif rising_edge(clk) then
+            ff1 <= ro_vec;
+            ff2 <= ff1;
+        end if;
+    end process;
+    ro_sync <= ff2;
+end RTL;
+\end{lstlisting}
+
+Listing~\ref{lst:ro_sampler} to moduł odpowiedzialny za próbkowanie i synchronizację ośmiobitowego
+wektora sygnałów z oscylatorów pierścieniowych. Wejście \texttt{ro\_vec} jest asynchroniczne względem
+zegara systemowego \texttt{clk}, dlatego nie może być bezpośrednio przekazane do dalszej logiki 
+sekwencyjnej. W tym celu zastosowano dwustopniowy synchronizator zbudowany z rejestrów \texttt{f1} oraz 
+\texttt{f2}, do których kolejne próbki sygnału są trafiają na narastającym zboczu zegara. Pierwszy stopień 
+przechwytuje aktualny stan wejścia, drugi stopien ogranicza ryzyko propagacji metastabilności do dalszej 
+części układu. Sygnał wyjściowy \texttt{ro\_sync} stanowi zsynchronizowaną z domeną zegarową wersję 
+wektora \texttt{ro\_vec}, gotową do dalszej obróbki cyfrowej, na przykład zliczania, mieszania lub 
+ekstrakcji bitów losowych. Dodatkowo użyto atrybutów \texttt{ASYNC\_REG}, \texttt{dont\_touch} oraz 
+\texttt{KEEP}, aby poinformować narzędzia syntezy i implementacji, że rejestry te realizują ścieżkę 
+synchronizacji sygnałów asynchronicznych i nie powinny zostać usunięte, scalone ani zoptymalizowane 
+w sposób zmieniający ich funkcję\cite{amd_vivado_asyncreg}.
 
 \section{Implementacja protokołu UART do transmisji ciągu losowych bitow}
 

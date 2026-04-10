@@ -738,3 +738,5 @@
     \@starttoc{app}
     \input{tekst/appendices}
 }
+
+\usepackage{makecell}

@@ -1,4 +1,338 @@
 \chapter{Badanie właściwości statystycznych generatora liczb losowych}
-\section{Badanie autokorelacji uzyskanego strumienia bitów}
+
+W niniejszym rozdziale przedstawiono praktyczną implementację metod statystycznych
+zastosowanych do oceny jakości strumienia bitów wygenerowanego w układzie FPGA
+z wykorzystaniem ring oscylatorów. Analiza została wykonana w języku Python na danych
+zebranych z działającego układu. Celem badań było sprawdzenie, czy wygenerowany strumień
+nie wykazuje zależności, które mogłyby świadczyć o występowaniu niepożądanych
+powiązań pomiędzy kolejnymi próbkami.
+Wyniki przedstawiono w postaci wykresów oraz tabel, co umożliwia ocenę
+wizualną, jak i dokładne porównanie wartości liczbowych.
+
+\section{Badanie autokorelacji uzyskanych strumieni bitów}
+
+Jednym z pierwszych wykonanych badań była analiza autokorelacji wygenerowanego strumienia
+bitów. W praktyce test ten został użyty do sprawdzenia, czy kolejne bity wygenerowane w 
+układzie FGPA nie wykazują krótkookresowych zależności, które mogłyby wynikać z architektury
+układu, sposobu próbkowania lub zbyt małego poziomu entropii na wejściu bloku
+odpowiedzialnego za generację bitów. Do badania wykorzystano zapisany strumień o długości $10\,485\,760$ bitów. Analiza została
+wykonana dla opóźnień od 0 do 15. Obliczenia zrealizowano w języku Python, a skrypt
+został przygotowany tak, aby automatycznie wyznaczać współczynniki autokorelacji oraz
+zapisywać wyniki w postaci wykresu i tabeli.
+
+\subsection{Implementacja skryptu}
+
+Listing~\ref{lst:autokorelacja_python} przedstawia przykładową implementację skryptu
+uktórego zadaniem jest automatyczne wczytanie zarejestrowanych strumieni bitów, 
+sprawdzenie poprawności danych, obliczenie wartości autokorelacji dla zadanych opóźnień
+oraz zapis wyników w postaci wykresu i tabeli. Przyjęte rozwiązanie ma charakter praktyczny i 
+zostało opracowane w taki sposób, aby można było wielokrotnie uruchamiać analizę 
+dla kolejnych plików pomiarowych bez potrzeby ręcznej ingerencji w kod.
+
+Parametry sterujące działaniem programu, takie jak ścieżka do pliku wejściowego,
+maksymalne analizowane opóźnienie, prefiks nazw plików wyjściowych oraz informacja
+o zapisie wykresów do plików, zostały wydzielone do osobnego modułu
+\texttt{user\_param}. Dzięki temu zmiana konfiguracji analizy nie wymaga modyfikacji
+głównej części programu.
+
+Skrypt akceptuje dane wejściowe jeśli są zapisane w pliku tekstowym, gdzie każda linia
+odpowiada jednemu strumieniowi bitów. W trakcie wczytywania pomijane są linie puste
+oraz linie rozpoczynające się od znaku \texttt{\#}, co pozwala umieszczać w pliku
+komentarze. Dla każdej niepustej linii wykonywana jest kontrola poprawności danych.
+Program dopuszcza wyłącznie znaki \texttt{0} i \texttt{1}. W przypadku wykrycia innego
+znaku zgłaszany jest wyjątek z informacją o numerze linii. Dodatkowo sprawdzana jest
+zgodność długości wszystkich strumieni zapisanych w pliku. Takie sprawdzenie było
+istotne z praktycznego punktu widzenia, ponieważ pozwala szybko wykryć błędy eksportu
+lub niepełne dane pomiarowe.
+
+Po wczytaniu danych obliczana jest autokorelacja. W pierwszym kroku
+strumień bitów jest przekształcany z zapisu binarnego \texttt{0/1} do postaci
+\texttt{-1/+1}. Następnie dla każdego opóźnienia wyznaczana jest średnia wartość
+iloczynu dwóch przesuniętych względem siebie fragmentów badanego ciągu. Analiza jest
+prowadzona od opóźnienia równego \(0\) do wartości określonej przez parametr
+\texttt{MAX\_LAG}, przy czym dla prezentacji wyników ograniczono zakres do opóźnień
+od \(0\) do \(15\). Takie ograniczenie pozwala na czytelną prezentację rezultatów i 
+na wychwycenia krótkookresowych zależności pomiędzy kolejnymi bitami.
+
+Dla każdego badanego strumienia program generuje dwa typy wyników graficznych.
+Pierwszym z nich jest wykres autokorelacji w funkcji opóźnienia. Został on podzielony
+na dwa panele: górny przedstawia pełny przebieg wraz z wartością dla opóźnienia zerowego,
+natomiast dolny prezentuje powiększenie dla opóźnień większych od zera. Taki sposób
+przedstawienia wyników jest lepszy w praktyce, ponieważ wartość \(R(0)=1\) dominuje
+na klasycznym wykresie i utrudnia ocenę bardzo małych wartości dla pozostałych opóźnień.
+Drugim wynikiem jest tabela z dokładnymi wartościami współczynników autokorelacji,
+zapisywana jako osobny plik graficzny. Dzięki temu uzyskano jednocześnie czytelną
+prezentację wizualną i dokładne zestawienie liczbowe.
+
+\begin{lstlisting}[
+    language=Python,
+    caption={Przykładowy skrypt w Pythonie do wyznaczania autokorelacji strumienia bitów},
+    label={lst:autokorelacja_python},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single
+]
+from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+from user_param import ANALYSIS_INPUT_PATH, MAX_LAG, OUT_PREFIX, SAVE_PLOTS
+
+def parse_bits_line(bit_text: str, line_no: int) -> np.ndarray:
+    ...
+
+def load_bitstreams_from_file(path: Path) -> list[np.ndarray]:
+    ...
+
+def build_plot_path(bitstream_idx: int, suffix: str) -> Path | None:
+    ...
+
+def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
+    if len(bits) < max_lag + 1:
+        raise ValueError("Not enough bits for MAX_LAG.")
+    x = bits.astype(np.int8) * 2 - 1
+    ac = np.empty(max_lag + 1, dtype=np.float64)
+    for lag in range(max_lag + 1):
+        a = x[: len(x) - lag]
+        b = x[lag:]
+        ac[lag] = np.mean(a * b)
+    return ac
+
+def plot_autocorrelation(ac: np.ndarray, lag_min: int, lag_max: int,
+    output: Path | None = None,) -> None:
+    ...
+
+def render_autocorrelation_table(ac: np.ndarray, bit_count: int,
+    bitstream_idx: int, bitstream_count: int, lag_min: int,
+    lag_max: int, output: Path | None = None,) -> None:
+    ...
+
+def validate_config() -> None:
+    ...
+
+def analyze_bitstream(bits: np.ndarray, bitstream_idx: int, 
+    bitstream_count: int) -> None:
+    max_lag_for_bitstream = min(MAX_LAG, len(bits) - 1)
+    if max_lag_for_bitstream < 0:
+        print("Autocorrelation skipped: not enough bits.")
+        return
+    ac = autocorrelation(bits, max_lag_for_bitstream)
+    lag_min = 0
+    lag_max = min(max_lag_for_bitstream, 15)
+    plot_autocorrelation(...)
+    render_autocorrelation_table(...)
+
+def main() -> None:
+    validate_config()
+    bitstreams = load_bitstreams_from_file(ANALYSIS_INPUT_PATH)
+\end{lstlisting}
+
+Przygotowanie osobnego skryptu badawczego było wygodne z praktycznego punktu widzenia,
+ponieważ pozwoliło łatwo powtarzać analizę dla kolejnych plików pomiarowych bez potrzeby
+ręcznego przeliczania wyników. Takie podejście ułatwia również porównanie różnych wersji
+generatora, na przykład po zmianie liczby ring oscylatorów, sposobu synchronizacji lub
+częstotliwości próbkowania.
+
+\subsection{Wyniki pomiaru dla 8 oscylatorów bez wybielania}
+
+Na rysunku~\ref{fig:autokorelacja_bitstream} pokazano wykres autokorelacji dla opóźnień
+od 0 do 15. Dodatkowo w tabeli~\ref{tab:autokorelacja_wyniki} zestawiono dokładne
+wartości współczynników.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{gfx/uart_rng_b001_autocorr.png}
+    \caption{Autokorelacja badanego strumienia bitów dla opóźnień od 0 do 15}
+    \label{fig:autokorelacja_bitstream}
+\end{figure}
+
+\begin{table}
+    \centering
+    \caption{Wartości współczynników autokorelacji dla badanego strumienia bitów}
+    \label{tab:autokorelacja_wyniki}
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Lag} & \textbf{R} \\
+        \hline
+        0  & +1.000000 \\
+        \hline
+        1  & -0.000309 \\
+        \hline
+        2  & +0.000139 \\
+        \hline
+        3  & -0.000544 \\
+        \hline
+        4  & -0.000127 \\
+        \hline
+        5  & -0.000326 \\
+        \hline
+        6  & -0.000520 \\
+        \hline
+        7  & -0.000173 \\
+        \hline
+        8  & +0.001182 \\
+        \hline
+        9  & -0.000102 \\
+        \hline
+        10 & -0.000060 \\
+        \hline
+        11 & -0.000192 \\
+        \hline
+        12 & -0.000176 \\
+        \hline
+        13 & +0.000061 \\
+        \hline
+        14 & -0.000226 \\
+        \hline
+        15 & -0.000306 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Na podstawie otrzymanych wyników można stwierdzić, że poza oczywistą wartością równą
+1 dla opóźnienia zerowego współczynniki autokorelacji pozostają bardzo bliskie zeru.
+W badanym zakresie nie zaobserwowano wyraźnego trendu, cykliczności ani serii wartości,
+które mogłyby wskazywać na prostą zależność pomiędzy kolejnymi bitami.
+
+Największą wartość bezwzględną dla opóźnień większych od zera odnotowano dla
+$\mathrm{lag}=8$, gdzie uzyskano $R=0{,}001182$. Jest to wciąż niska wartość,
+a na wykresie nie tworzy ona regularnego wzorca powtarzającego się dla kolejnych opóźnień.
+Oznacza to, że w badanym fragmencie strumienia nie widać krótkookresowej struktury,
+która mogłaby sugerować nieprawidłową pracę generatora.
+
+Z praktycznego punktu widzenia wynik ten można uznać za poprawny i zgodny z oczekiwaniami
+dla generatora bitów losowych. Analiza autokorelacji została potraktowana jako test
+kontrolny, który pozwala wychwycić problemy implementacyjne jeszcze przed wykonaniem
+bardziej rozbudowanych badań statystycznych. W przypadku projektów sprzętowych takie
+podejście jest szczególnie przydatne, ponieważ umożliwia szybkie porównanie wyników po
+każdej zmianie konfiguracji układu FPGA.
+
+\subsection{Wyniki pomiaru dla 8 oscylatorów z wybielaniem Von Neumanna}
+
+\subsection{Wnioski}
+
+Przeprowadzone badanie autokorelacji potwierdziło, że analizowany strumień bitów nie
+wykazuje istotnych zależności dla małych opóźnień. Otrzymane wyniki stanowią więc dobrą
+podstawę do dalszych testów jakości generatora.
+Analiza autokorelacji okazała się użytecznym etapem weryfikacji generatora,
+ponieważ pozwoliła szybko ocenić wpływ implementacji sprzętowej na własności wyjściowego
+strumienia danych. Dzięki temu możliwe było potwierdzenie, że zastosowanie ring
+oscylatorów jako źródła entropii nie wprowadziło widocznych zależności w badanym zakresie
+opóźnień.
+
 \section{Analiza utworzonych słów bitowych za pomocą map 2D}
-\section{Badanie bias'u uzyskanego strumienia bitów}
+
+\section{Badanie bias'u uzyskanych strumieni bitów}
+Kolejnym etapem praktycznej oceny generatora było sprawdzenie biasu, czyli nierównowagi
+pomiędzy liczbą zer i jedynek w uzyskanym strumieniu bitów. Badanie to sprawdza czy wyjście układu
+FPGA nie wykazuje zauważalnego przesunięcia w stronę jednej z wartości logicznych.
+Jest to istotne szczególnie na etapie uruchamiania i strojenia generatora, ponieważ 
+asymetria może wskazywać na negatywny wpływ implementacji sprzętowej, sposobu próbkowania
+lub parametrów wykorzystanych ring oscylatorów na źródło entropii.
+
+Do analizy przygotowano skrypt w języku Python, który automatycznie wczytuje strumienie
+bitów z pliku tekstowego, sprawdza poprawność danych wejściowych, a następnie dla każdego
+strumienia wyznacza liczbę zer i jedynek, prawdopodobieństwa \(P(0)\) oraz \(P(1)\),
+wartość biasu zdefiniowaną jako \(P(1)-0{,}5\), średnią po odwzorowaniu bitów do zbioru
+\(\{-1, +1\}\), a także wartość \(p\)-value dla testu monobitowego. Dodatkowo program
+wyznacza pasma odniesienia \(\pm 2\sigma\) oraz \(\pm 3\sigma\), co ułatwia ocenę skali
+odchylenia. Parametr istotności testu jest zadawany w konfiguracji jako \texttt{BIAS\_ALPHA},
+dzięki czemu procedurę można łatwo powtarzać dla różnych ustawień.
+
+Na listingu~\ref{lst:bias_python} pokazano fragment skryptu odpowiedzialny za obliczenie
+najważniejszych parametrów opisujących bias badanego strumienia.
+
+\begin{lstlisting}[
+    language=Python,
+    caption={Fragment skryptu realizującego analizę biasu strumienia bitów},
+    label={lst:bias_python},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single
+]
+def analyze_bitstream(bits: np.ndarray, bitstream_idx: int, bitstream_count: int) -> dict[str, float | int | bool]:
+    total_bits = len(bits)
+    one_count = int(np.count_nonzero(bits))
+    zero_count = total_bits - one_count
+    p_one = one_count / total_bits
+    p_zero = zero_count / total_bits
+    bias_01 = p_one - 0.5
+    mean_pm1 = 2.0 * p_one - 1.0
+    sigma_bias = 0.5 / sqrt(total_bits)
+    s_n = one_count - zero_count
+    s_obs = abs(s_n) / sqrt(total_bits)
+    p_value = erfc(s_obs / sqrt(2.0))
+    passed = p_value >= BIAS_ALPHA
+
+    return {
+        "bitstream_idx": bitstream_idx,
+        "total_bits": total_bits,
+        "zero_count": zero_count,
+        "one_count": one_count,
+        "p_zero": p_zero,
+        "p_one": p_one,
+        "bias_01": bias_01,
+        "mean_pm1": mean_pm1,
+        "sigma_bias": sigma_bias,
+        "p_value": p_value,
+        "passed": passed,
+    }
+\end{lstlisting}
+
+Badanie wykonano dla jednego strumienia o długości \(10\,485\,760\) bitów. Wyniki
+zestawiono w tabeli~\ref{tab:bias_wyniki}. Zrezygnowano z osobnej kolumny zawierającej
+wyłącznie etykietę \texttt{PASS}/\texttt{FAIL}, ponieważ w pracy wygodniejsze jest
+opisanie wyniku słownie i odniesienie go do charakteru badanego układu.
+
+\begin{table}
+    \centering
+    \caption{Wyniki badania biasu dla analizowanego strumienia bitów}
+    \label{tab:bias_wyniki}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|c|r|r|r|c|c|c|c|c|}
+        \hline
+        \textbf{Seria} &
+        \makecell{\textbf{Liczba}\\\textbf{bitów}} &
+        \textbf{Zera} &
+        \textbf{Jedynki} &
+        \textbf{\(P(0)\)} &
+        \textbf{\(P(1)\)} &
+        \makecell{\textbf{Bias}\\\textbf{\(P(1)-0.5\)}} &
+        \makecell{\textbf{Średnia}\\\textbf{\(\{-1,+1\}\)}} &
+        \makecell{\textbf{\(p\)-}\\\textbf{value}} \\
+        \hline
+        1 &
+        10485760 &
+        5224958 &
+        5260802 &
+        0.498291 &
+        0.501709 &
+        \makecell[c]{+0.001709\\} &
+        \makecell[c]{+0.003418\\} &
+        \makecell[c]{0.000000\\} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Na podstawie uzyskanych wyników można stwierdzić, że w badanym strumieniu występuje
+niewielka przewaga jedynek nad zerami. Różnica ta nie jest duża w sensie bezwzględnym,
+ponieważ \(P(1)=0{,}501709\), a więc odchylenie od wartości idealnej wynosi około
+\(0{,}17\%\). Jednocześnie, ze względu na długą analizowaną sekwencję,
+nawet tak małe przesunięcie staje się dobrze widoczne w teście statystycznym, co znajduje
+odzwierciedlenie w bardzo małej wartości \(p\)-value.
+
+W praktyce oznacza to, że wyjściowy strumień generatora nie jest idealnie zrównoważony
+i wykazuje lekkie przesunięcie w stronę jedynek. Nie należy jednak interpretować tego
+wyniku w oderwaniu od przeznaczenia układu. Badany generator nie był projektowany jako
+zaawansowany układ kryptograficzny, lecz jako praktyczna implementacja sprzętowego
+źródła bitów losowych w oparciu o ring oscylatory w strukturze FPGA. Z tego powodu sam
+fakt wystąpienia niewielkiego biasu nie przekreśla użyteczności rozwiązania, ale jasno
+wskazuje, że w celu poprawy jakości strumienia wyjściowego warto zastosować dodatkowe
+etapy przetwarzania, na przykład wybielanie danych.
+
+Przeprowadzona analiza biasu spełniła więc swoją rolę diagnostyczną. Pozwoliła
+określić kierunek odchylenia, oszacować jego skalę oraz wskazać, że dalsza poprawa jakości
+strumienia powinna obejmować mechanizmy redukujące nierównowagę pomiędzy zerami i jedynkami.
+
+\subsection{Badanie bias'u po zastosowaniu wybielania metodą von Neumanna}                                                                                                                                                                                                                                                                                                                        

@@ -66,26 +66,12 @@ prezentację wizualną i dokładne zestawienie liczbowe.
 
 \begin{lstlisting}[
     language=Python,
-    caption={Przykładowy skrypt w Pythonie do wyznaczania autokorelacji strumienia bitów},
+    caption={Fragment skrypt w Pythonie do wyznaczania autokorelacji strumienia bitów},
     label={lst:autokorelacja_python},
     basicstyle=\ttfamily\small,
     breaklines=true,
     frame=single
 ]
-from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
-from user_param import ANALYSIS_INPUT_PATH, MAX_LAG, OUT_PREFIX, SAVE_PLOTS
-
-def parse_bits_line(bit_text: str, line_no: int) -> np.ndarray:
-    ...
-
-def load_bitstreams_from_file(path: Path) -> list[np.ndarray]:
-    ...
-
-def build_plot_path(bitstream_idx: int, suffix: str) -> Path | None:
-    ...
-
 def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
     if len(bits) < max_lag + 1:
         raise ValueError("Not enough bits for MAX_LAG.")
@@ -96,34 +82,6 @@ def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
         b = x[lag:]
         ac[lag] = np.mean(a * b)
     return ac
-
-def plot_autocorrelation(ac: np.ndarray, lag_min: int, lag_max: int,
-    output: Path | None = None,) -> None:
-    ...
-
-def render_autocorrelation_table(ac: np.ndarray, bit_count: int,
-    bitstream_idx: int, bitstream_count: int, lag_min: int,
-    lag_max: int, output: Path | None = None,) -> None:
-    ...
-
-def validate_config() -> None:
-    ...
-
-def analyze_bitstream(bits: np.ndarray, bitstream_idx: int, 
-    bitstream_count: int) -> None:
-    max_lag_for_bitstream = min(MAX_LAG, len(bits) - 1)
-    if max_lag_for_bitstream < 0:
-        print("Autocorrelation skipped: not enough bits.")
-        return
-    ac = autocorrelation(bits, max_lag_for_bitstream)
-    lag_min = 0
-    lag_max = min(max_lag_for_bitstream, 15)
-    plot_autocorrelation(...)
-    render_autocorrelation_table(...)
-
-def main() -> None:
-    validate_config()
-    bitstreams = load_bitstreams_from_file(ANALYSIS_INPUT_PATH)
 \end{lstlisting}
 
 Przygotowanie osobnego skryptu badawczego było wygodne z praktycznego punktu widzenia,
@@ -208,18 +166,71 @@ każdej zmianie konfiguracji układu FPGA.
 
 \subsection{Wyniki pomiaru dla 8 oscylatorów z wybielaniem Von Neumanna}
 
-\subsection{Wnioski}
-
-Przeprowadzone badanie autokorelacji potwierdziło, że analizowany strumień bitów nie
-wykazuje istotnych zależności dla małych opóźnień. Otrzymane wyniki stanowią więc dobrą
-podstawę do dalszych testów jakości generatora.
-Analiza autokorelacji okazała się użytecznym etapem weryfikacji generatora,
-ponieważ pozwoliła szybko ocenić wpływ implementacji sprzętowej na własności wyjściowego
-strumienia danych. Dzięki temu możliwe było potwierdzenie, że zastosowanie ring
-oscylatorów jako źródła entropii nie wprowadziło widocznych zależności w badanym zakresie
-opóźnień.
-
 \section{Analiza utworzonych słów bitowych za pomocą map 2D}
+
+Mapy dwuwymiarowe zastosowano w celu oceny właściwości statystycznych słów utworzonych z badanego 
+strumienia bitów oraz analizy zależności pomiędzy słowami oddalonymi od siebie o zadane opóźnienie. 
+Dla każdej rozpatrywanej konfiguracji wyznaczano pary w postaci $(w[n],\,w[n+\tau])$, gdzie $w[n]$ 
+oznacza bieżące słowo bitowe, natomiast $w[n+\tau]$ słowo przesunięte o opóźnienie $\tau$. 
+Następnie ilość wystąpień poszczególnych par przedstawiano w postaci histogramu dwuwymiarowego.
+
+W przypadku generatora o dobrych właściwościach losowych rozkład punktów na mapie 2D powinien być 
+możliwie jednorodny, bez wyraźnych struktur geometrycznych, pasów oraz nadmiernej koncentracji 
+zliczeń w określonych obszarach. 
+Pojawienie się pasów pionowych lub poziomych wskazuje, że niektóre wartości słów występują 
+częściej od innych, co świadczy o nierównomierności rozkładu. 
+Z kolei zwiększona koncentracja punktów w pobliżu przekątnej może sugerować istnienie zależności 
+pomiędzy kolejnymi słowami, a więc obecność korelacji czasowej w analizowanym ciągu.
+
+\subsection{Mapy dla 8 oscylatorów bez wybielania}
+
+Analiza map 2D wyznaczonych dla generatora zbudowanego z ośmiu oscylatorów pierścieniowych, bez 
+zastosowania mechanizmu wybielania, wskazuje na obecność pewnych odchyleń od idealnie 
+jednorodnego rozkładu. 
+
+W szczególności dla słów 4-bitowych widoczne są regularne obszary o podwyższonej i obniżonej 
+ilości zliczonych słów, tworzące charakterystyczne pasy wzdłuż osi układu współrzędnych. 
+Taki obraz świadczy o tym, że poszczególne kombinacje 4-bitowe nie występują z jednakowym 
+prawdopodobieństwem, a więc rozkład utworzonych słów wykazuje zauważalny bias statystyczny.
+Porównanie map uzyskanych dla dwóch różnych wartości opóźnienia, tj. $\tau=6$ oraz $\tau=8$, 
+prowadzi do wniosku, że ogólny charakter obserwowanych struktur pozostaje zbliżony. 
+Zmiana opóźnienia wpływa jedynie na lokalny rozkład liczności w poszczególnych komórkach 
+histogramu, nie powodując jednak zaniku dominujących wzorców. Oznacza to, że zaobserwowane 
+niejednorodności nie są związane wyłącznie z jedną konkretną wartością opóźnienia, lecz 
+stanowią bardziej ogólną cechę badanego strumienia danych.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth]{gfx/2d_w4}
+    \caption{Mapy 2D dla generatora bez wybielania, przy parametrach $word\_size = 4$ oraz 
+    $\tau = 6$, $\tau = 8$.}
+    \label{fig:map2d_w4_tau6}
+\end{figure}
+
+W przypadku słów 8-bitowych mapy mają wyraźnie bardziej jednorodny charakter wizualny. 
+Nie obserwuje się już tak silnie zaznaczonych, regularnych pasów jak dla słów 4-bitowych, co 
+wskazuje na korzystniejsze właściwości rozkładu w przestrzeni wszystkich możliwych wartości 
+bajtowych.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth]{gfx/2d_w8}
+    \caption{Mapy 2D dla generatora bez wybielania, przy parametrach $word\_size = 8$, 
+    $\tau = 6$ oraz $\tau = 8$.}
+    \label{fig:map2d_w8_tau6}
+\end{figure}
+
+Jednocześnie na mapach nadal można dostrzec niewielkie lokalne nierównomierności, co oznacza, 
+że badany generator nie osiąga idealnie płaskiego rozkładu także dla tej długości słowa.
+Istotną obserwacją jest również brak wyraźnie dominującej przekątnej na analizowanych mapach. 
+Sugeruje to, że głównym efektem widocznym w badaniu nie jest silna korelacja pomiędzy parami 
+słów $(w[n],\,w[n+\tau])$, lecz przede wszystkim nierównomierne prawdopodobieństwo występowania 
+określonych wartości słów. 
+Można zatem stwierdzić, że w analizowanej konfiguracji generator bez wybielania wykazuje przede 
+wszystkim bias statystyczny, szczególnie dobrze widoczny dla krótszych słów 4-bitowych, natomiast 
+wpływ samego opóźnienia $\tau$ pozostaje stosunkowo niewielki.
+
+\subsection{Mapy dla 8 oscylatorów z wybielaniem Von Neumanna}
 
 \section{Badanie bias'u uzyskanych strumieni bitów}
 Kolejnym etapem praktycznej oceny generatora było sprawdzenie biasu, czyli nierównowagi
@@ -228,6 +239,8 @@ FPGA nie wykazuje zauważalnego przesunięcia w stronę jednej z wartości logic
 Jest to istotne szczególnie na etapie uruchamiania i strojenia generatora, ponieważ 
 asymetria może wskazywać na negatywny wpływ implementacji sprzętowej, sposobu próbkowania
 lub parametrów wykorzystanych ring oscylatorów na źródło entropii.
+
+\subsection{Badanie bias'u po przed zastosowaniem wybielania}
 
 Do analizy przygotowano skrypt w języku Python, który automatycznie wczytuje strumienie
 bitów z pliku tekstowego, sprawdza poprawność danych wejściowych, a następnie dla każdego
@@ -335,4 +348,15 @@ Przeprowadzona analiza biasu spełniła więc swoją rolę diagnostyczną. Pozwo
 określić kierunek odchylenia, oszacować jego skalę oraz wskazać, że dalsza poprawa jakości
 strumienia powinna obejmować mechanizmy redukujące nierównowagę pomiędzy zerami i jedynkami.
 
-\subsection{Badanie bias'u po zastosowaniu wybielania metodą von Neumanna}                                                                                                                                                                                                                                                                                                                        
+\subsection{Badanie bias'u po zastosowaniu wybielania metodą von Neumanna}    
+
+\section{Wnioski z analizy statystycznej generatora liczb losowych}
+
+Przeprowadzone badanie autokorelacji potwierdziło, że analizowany strumień bitów nie
+wykazuje istotnych zależności dla małych opóźnień. Otrzymane wyniki stanowią więc dobrą
+podstawę do dalszych testów jakości generatora.
+Analiza autokorelacji okazała się użytecznym etapem weryfikacji generatora,
+ponieważ pozwoliła szybko ocenić wpływ implementacji sprzętowej na własności wyjściowego
+strumienia danych. Dzięki temu możliwe było potwierdzenie, że zastosowanie ring
+oscylatorów jako źródła entropii nie wprowadziło widocznych zależności w badanym zakresie
+opóźnień.

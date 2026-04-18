@@ -166,6 +166,90 @@ każdej zmianie konfiguracji układu FPGA.
 
 \subsection{Wyniki pomiaru dla 8 oscylatorów z wybielaniem Von Neumanna}
 
+Na rysunku~\ref{fig:autokorelacja_bitstream_wh} pokazano wykres autokorelacji
+dla strumienia bitów po zastosowaniu wybielania metodą von Neumanna.
+Dodatkowo w tabeli~\ref{tab:autokorelacja_wyniki_wh} zestawiono dokładne
+wartości współczynników autokorelacji dla opóźnień od 0 do 15.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{gfx/wh_ac.png}
+    \caption{Autokorelacja badanego strumienia bitów po zastosowaniu wybielania metodą von Neumanna dla opóźnień od 0 do 15}
+    \label{fig:autokorelacja_bitstream_wh}
+\end{figure}
+
+\begin{table}
+    \centering
+    \caption{Wartości współczynników autokorelacji dla strumienia bitów po zastosowaniu wybielania metodą von Neumanna}
+    \label{tab:autokorelacja_wyniki_wh}
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Lag} & \textbf{R} \\
+        \hline
+        0  & +1.000000 \\
+        \hline
+        1  & +0.000459 \\
+        \hline
+        2  & +0.000796 \\
+        \hline
+        3  & +0.000605 \\
+        \hline
+        4  & +0.000303 \\
+        \hline
+        5  & +0.000146 \\
+        \hline
+        6  & +0.000072 \\
+        \hline
+        7  & +0.000427 \\
+        \hline
+        8  & -0.000015 \\
+        \hline
+        9  & +0.001436 \\
+        \hline
+        10 & +0.000875 \\
+        \hline
+        11 & -0.000136 \\
+        \hline
+        12 & +0.000235 \\
+        \hline
+        13 & -0.000572 \\
+        \hline
+        14 & +0.000427 \\
+        \hline
+        15 & +0.000611 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Na podstawie otrzymanych wyników można stwierdzić, że współczynniki autokorelacji dla pozostałych opóźnień
+pozostają bardzo bliskie zeru. Wszystkie analizowane wartości mieszczą się w zakresie
+od \(-0{,}000572\) do \(+0{,}001436\), a więc nadal są bardzo małe z praktycznego
+punktu widzenia.
+
+Największą wartość dodatnią uzyskano dla \(\mathrm{lag}=9\), gdzie
+\(R=+0{,}001436\). Największą wartość ujemną otrzymano natomiast dla
+\(\mathrm{lag}=13\), gdzie \(R=-0{,}000572\). Dla \(\mathrm{lag}=8\)
+współczynnik autokorelacji był praktycznie równy zeru i wyniósł
+\(R=-0{,}000015\). Otrzymany przebieg nie wykazuje regularnej struktury,
+cykliczności ani serii kolejnych wartości, które mogłyby świadczyć
+o silnej zależności pomiędzy sąsiednimi bitami.
+
+Porównując oba warianty generatora można zauważyć, że wybielanie zmieniło rozkład
+lokalnych maksimów i minimów autokorelacji. Dla strumienia bez wybielania największe
+odchylenie wystąpiło dla \(\mathrm{lag}=8\), gdzie uzyskano \(R=+0{,}001182\).
+Po zastosowaniu wybielania największe odchylenie przesunęło się do
+\(\mathrm{lag}=9\) i osiągnęło wartość \(R=+0{,}001436\). Oznacza to, że na podstawie
+samej autokorelacji nie można stwierdzić jednoznacznej poprawy po wybielaniu, ponieważ
+największa wartość bezwzględna współczynnika jest w tym przypadku nieco większa niż
+dla strumienia surowego.
+
+Z drugiej strony należy podkreślić, że w obu analizowanych przypadkach wartości
+autokorelacji dla opóźnień większych od zera pozostają rzędu \(10^{-4}\)–\(10^{-3}\),
+czyli są bardzo małe. W praktyce oznacza to brak wyraźnych krótkookresowych zależności
+czasowych w badanym strumieniu. Z punktu widzenia testu autokorelacji oba warianty
+generatora można więc uznać za poprawne, natomiast pełniejsza ocena wpływu wybielania
+wymaga zestawienia tych wyników z analizą biasu oraz mapami 2D.
+
 \section{Analiza utworzonych słów bitowych za pomocą map 2D}
 
 Mapy dwuwymiarowe zastosowano w celu oceny właściwości statystycznych słów utworzonych z badanego 
@@ -199,9 +283,9 @@ histogramu, nie powodując jednak zaniku dominujących wzorców. Oznacza to, że
 niejednorodności nie są związane wyłącznie z jedną konkretną wartością opóźnienia, lecz 
 stanowią bardziej ogólną cechę badanego strumienia danych.
 
-\begin{figure}[ht]
+\begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{gfx/no_wh_2d_w4_t6_t8}
+    \includegraphics[width=0.88\textwidth]{gfx/no_wh_2d_w4_t6_t8}
     \caption{Mapy 2D dla generatora bez wybielania, przy parametrach $word\_size = 4$ oraz 
     $\tau = 6$, $\tau = 8$.}
     \label{fig:map2d_w4_tau6}
@@ -214,23 +298,82 @@ bajtowych.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.95\textwidth]{gfx/no_wh_2d_w8_t6_t8}
+    \includegraphics[width=0.92\textwidth]{gfx/no_wh_2d_w8_t6_t8}
     \caption{Mapy 2D dla generatora bez wybielania, przy parametrach $word\_size = 8$, 
     $\tau = 6$ oraz $\tau = 8$.}
     \label{fig:map2d_w8_tau6}
 \end{figure}
 
-Jednocześnie na mapach nadal można dostrzec niewielkie lokalne nierównomierności, co oznacza, 
-że badany generator nie osiąga idealnie płaskiego rozkładu także dla tej długości słowa.
+Na mapach nadal można dostrzec niewielkie lokalne nierównomierności, co oznacza, 
+że badany generator nie osiąga idealnie równomiernego rozkładu także dla tej długości słowa.
 Istotną obserwacją jest również brak wyraźnie dominującej przekątnej na analizowanych mapach. 
 Sugeruje to, że głównym efektem widocznym w badaniu nie jest silna korelacja pomiędzy parami 
 słów $(w[n],\,w[n+\tau])$, lecz przede wszystkim nierównomierne prawdopodobieństwo występowania 
-określonych wartości słów. 
-Można zatem stwierdzić, że w analizowanej konfiguracji generator bez wybielania wykazuje przede 
-wszystkim bias statystyczny, szczególnie dobrze widoczny dla krótszych słów 4-bitowych, natomiast 
-wpływ samego opóźnienia $\tau$ pozostaje stosunkowo niewielki.
+określonych wartości słów, wpływ samego opóźnienia $\tau$ pozostaje stosunkowo niewielki.
 
 \subsection{Mapy dla 8 oscylatorów z wybielaniem Von Neumanna}
+
+Po zastosowaniu wybielania metodą von Neumanna ponownie wyznaczono mapy 2D
+dla par słów postaci $(w[n],\,w[n+\tau])$, przyjmując takie same wartości
+opóźnienia jak poprzednio, czyli $\tau = 6$ oraz $\tau = 8$.
+W tym przypadku analizowano krótszy strumień wyjściowy o długości
+$2\,621\,606$ bitów, co wynika z faktu, że algorytm von Neumanna odrzuca
+część par bitów wejściowych. Dla słów 4-bitowych otrzymano
+$655\,401$ słów, natomiast dla słów 8-bitowych $327\,700$ słów.
+
+Dla słów 4-bitowych mapy nadal nie mają charakteru idealnie jednorodnego.
+Widoczne są obszary o wyraźnie większej i mniejszej liczbie zliczeń,
+a więc rozkład par słów w przestrzeni $(w[n],\,w[n+\tau])$ pozostaje
+nierównomierny. W porównaniu z przypadkiem bez wybielania zmienia się jednak
+charakter obserwowanych struktur. Zamiast bardziej regularnych pasów
+widocznych wcześniej pojawia się wyraźniejsza tendencja do zwiększania
+liczności w kierunku prawego górnego obszaru mapy. Oznacza to, że wybielanie
+zmieniło strukturę rozkładu, ale nie doprowadziło jeszcze do jego pełnego
+wyrównania dla krótkich słów 4-bitowych.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth]{gfx/wh_2d_w4_t6_t8}
+    \caption{Mapy 2D dla generatora z wybielaniem metodą von Neumanna, przy parametrach $word\_size = 4$ oraz $\tau = 6$, $\tau = 8$.}
+    \label{fig:map2d_wh_w4_tau6}
+\end{figure}
+
+Ważną obserwacją jest to, że dla obu badanych wartości opóźnienia ogólny obraz
+map pozostaje bardzo podobny. Oznacza to, że dominujące odchylenia nie są
+związane z jedną konkretną wartością $\tau$, lecz wynikają raczej z ogólnych
+właściwości badanego strumienia po wybielaniu. Jednocześnie nie obserwuje się
+silnie zaznaczonej przekątnej, dlatego na podstawie samych map 2D nie widać
+tu wyraźnej korelacji pomiędzy kolejnymi słowami. Głównym efektem pozostaje
+nierównomierność rozkładu częstości występowania poszczególnych par.
+
+Dla słów 8-bitowych uzyskane mapy mają znacznie bardziej jednorodny charakter
+wizualny. Nie widać wyraźnych pasów pionowych, poziomych ani dominującej
+przekątnej. Rozkład zliczeń sprawia wrażenie bliskiego losowemu, a lokalne
+różnice pomiędzy sąsiednimi komórkami mają raczej charakter drobnych fluktuacji
+niż trwałych struktur geometrycznych.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth]{gfx/wh_2d_w8_t6_t8}
+    \caption{Mapy 2D dla generatora z wybielaniem metodą von Neumanna, przy parametrach $word\_size = 8$ oraz $\tau = 6$, $\tau = 8$.}
+    \label{fig:map2d_wh_w8_tau6}
+\end{figure}
+
+W porównaniu z wersją bez wybielania można stwierdzić, że dla słów 8-bitowych
+obraz map pozostaje poprawny i nie ujawnia silnych zależności pomiędzy słowami
+oddalonymi o zadane opóźnienie. Należy jednak pamiętać, że po wybielaniu liczba
+dostępnych próbek jest mniejsza, dlatego mapy są bardziej ziarniste i zawierają
+większy udział naturalnych fluktuacji losowych. Mimo to nie pojawiają się na nich
+wzorce, które mogłyby świadczyć o istotnym pogorszeniu jakości ciągu.
+
+Na podstawie analizy map 2D można więc stwierdzić, że zastosowanie wybielania
+von Neumanna nie usuwa całkowicie nierównomierności widocznych dla słów
+4-bitowych, ale dla słów 8-bitowych otrzymane rozkłady pozostają wizualnie
+bliskie jednorodnym. W obu przypadkach wpływ zmiany opóźnienia z $\tau = 6$
+na $\tau = 8$ jest niewielki, co sugeruje brak silnej zależności czasowej
+ujawniającej się dopiero dla jednej konkretnej wartości przesunięcia.
+Pełniejsza interpretacja tych wyników będzie możliwa po zestawieniu ich
+z osobną analizą biasu badanego generatora.
 
 \section{Badanie bias'u uzyskanych strumieni bitów}
 Kolejnym etapem praktycznej oceny generatora było sprawdzenie biasu, czyli nierównowagi
@@ -277,16 +420,11 @@ def analyze_bitstream(bits: np.ndarray, bitstream_idx: int, bitstream_count: int
     passed = p_value >= BIAS_ALPHA
 
     return {
-        "bitstream_idx": bitstream_idx,
-        "total_bits": total_bits,
-        "zero_count": zero_count,
-        "one_count": one_count,
-        "p_zero": p_zero,
-        "p_one": p_one,
-        "bias_01": bias_01,
-        "mean_pm1": mean_pm1,
-        "sigma_bias": sigma_bias,
-        "p_value": p_value,
+        "bitstream_idx": bitstream_idx, "total_bits": total_bits,
+        "zero_count": zero_count, "one_count": one_count,
+        "p_zero": p_zero, "p_one": p_one,
+        "bias_01": bias_01, "mean_pm1": mean_pm1,
+        "sigma_bias": sigma_bias, "p_value": p_value,
         "passed": passed,
     }
 \end{lstlisting}
@@ -296,7 +434,7 @@ zestawiono w tabeli~\ref{tab:bias_wyniki}. Zrezygnowano z osobnej kolumny zawier
 wyłącznie etykietę \texttt{PASS}/\texttt{FAIL}, ponieważ w pracy wygodniejsze jest
 opisanie wyniku słownie i odniesienie go do charakteru badanego układu.
 
-\begin{table}
+\begin{table}[ht]
     \centering
     \caption{Wyniki badania biasu dla analizowanego strumienia bitów}
     \label{tab:bias_wyniki}
@@ -347,16 +485,124 @@ etapy przetwarzania, na przykład wybielanie danych.
 Przeprowadzona analiza biasu spełniła więc swoją rolę diagnostyczną. Pozwoliła
 określić kierunek odchylenia, oszacować jego skalę oraz wskazać, że dalsza poprawa jakości
 strumienia powinna obejmować mechanizmy redukujące nierównowagę pomiędzy zerami i jedynkami.
+\subsection{Badanie bias'u po zastosowaniu wybielania metodą von Neumanna}
 
-\subsection{Badanie bias'u po zastosowaniu wybielania metodą von Neumanna}    
+Po zastosowaniu wybielania metodą von Neumanna ponownie wykonano analizę biasu
+dla otrzymanego strumienia bitów. W tym przypadku długość sekwencji wyjściowej
+uległa zmniejszeniu do \(2\,621\,606\) bitów, co jest naturalną konsekwencją działania
+algorytmu, który odrzuca wszystkie pary bitów postaci \(00\) oraz \(11\), a zachowuje
+jedynie pary różniące się od siebie.
+
+Wyniki badania zestawiono w tabeli~\ref{tab:bias_wyniki_wh}. Podobnie jak w poprzednim
+przypadku uwzględniono liczbę zer i jedynek, prawdopodobieństwa \(P(0)\) oraz \(P(1)\),
+wartość biasu zdefiniowaną jako \(P(1)-0{,}5\), średnią po odwzorowaniu bitów do zbioru
+\(\{-1,+1\}\) oraz wartość \(p\)-value testu monobitowego.
+
+\begin{table}[ht]
+    \centering
+    \caption{Wyniki badania biasu dla strumienia po zastosowaniu wybielania metodą von Neumanna}
+    \label{tab:bias_wyniki_wh}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|c|r|r|r|c|c|c|c|c|}
+        \hline
+        \textbf{Seria} &
+        \makecell{\textbf{Liczba}\\\textbf{bitów}} &
+        \textbf{Zera} &
+        \textbf{Jedynki} &
+        \textbf{\(P(0)\)} &
+        \textbf{\(P(1)\)} &
+        \makecell{\textbf{Bias}\\\textbf{\(P(1)-0.5\)}} &
+        \makecell{\textbf{Średnia}\\\textbf{\(\{-1,+1\}\)}} &
+        \makecell{\textbf{\(p\)-}\\\textbf{value}} \\
+        \hline
+        1 &
+        2621606 &
+        1288330 &
+        1333276 &
+        0.491428 &
+        0.508572 &
+        \makecell[c]{+0.008572\\} &
+        \makecell[c]{+0.017144\\} &
+        \makecell[c]{0.000000\\} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Na podstawie uzyskanych wyników można stwierdzić, że po zastosowaniu wybielania
+w badanym strumieniu nadal występuje przewaga jedynek nad zerami. Wartość
+\(P(1)=0{,}508572\) oznacza odchylenie od idealnej równowagi o około \(0{,}86\%\),
+czyli większe niż w przypadku strumienia przed wybielaniem.
+
+Jest to obserwacja istotna, ponieważ w analizowanym przypadku wybielanie metodą
+von Neumanna nie doprowadziło do zmniejszenia biasu. Przeciwnie, po przetworzeniu
+strumienia wartość biasu wzrosła z \(+0{,}001709\) dla sekwencji surowej do
+\(+0{,}008572\) dla sekwencji po wybielaniu. Oznacza to, że zastosowany algorytm
+nie poprawił równowagi pomiędzy liczbą zer i jedynek w badanej próbce.
+
+Warto zauważyć, że w metodzie von Neumanna bity wyjściowe powstają wyłącznie z par
+\(01\) oraz \(10\). Otrzymana przewaga jedynek w strumieniu po wybielaniu oznacza więc,
+że w analizowanym wejściowym strumieniu dla przyjętego sposobu parowania częściej
+występowały pary \(10\) niż \(01\).
+
+Z praktycznego punktu widzenia nie musi to oznaczać błędu implementacyjnego samego
+algorytmu wybielania. Bardziej prawdopodobne jest to, że uzyskany wynik stanowi
+konsekwencję właściwości badanego generatora oraz sposobu grupowania kolejnych bitów
+w pary. W szczególności możliwe jest, że dla innego przesunięcia początku parowania
+otrzymano by nieco inny wynik biasu.
+
+Przeprowadzona analiza pokazuje więc, że w badanym układzie wybielanie metodą
+von Neumanna nie dało oczekiwanej poprawy w zakresie równowagi pomiędzy zerami
+i jedynkami. Z tego względu wpływ tej procedury należy oceniać
+rozpatrywać łącznie z wynikami autokorelacji oraz map 2D, które opisują inne aspekty
+właściwości statystycznych uzyskanego strumienia.  
 
 \section{Wnioski z analizy statystycznej generatora liczb losowych}
 
-Przeprowadzone badanie autokorelacji potwierdziło, że analizowany strumień bitów nie
-wykazuje istotnych zależności dla małych opóźnień. Otrzymane wyniki stanowią więc dobrą
-podstawę do dalszych testów jakości generatora.
-Analiza autokorelacji okazała się użytecznym etapem weryfikacji generatora,
-ponieważ pozwoliła szybko ocenić wpływ implementacji sprzętowej na własności wyjściowego
-strumienia danych. Dzięki temu możliwe było potwierdzenie, że zastosowanie ring
-oscylatorów jako źródła entropii nie wprowadziło widocznych zależności w badanym zakresie
-opóźnień.
+Przeprowadzona analiza statystyczna objęła trzy podstawowe grupy testów:
+autokorelację strumienia bitów, mapy 2D dla utworzonych słów bitowych oraz badanie
+biasu przed i po zastosowaniu wybielania metodą von Neumanna. Dzięki temu możliwe
+było ocenienie generatora zarówno pod kątem zależności czasowych, jak i równomierności
+rozkładu generowanych danych.
+
+W badaniu autokorelacji dla obu analizowanych wariantów, czyli bez wybielania
+oraz po wybielaniu, współczynniki autokorelacji dla małych opóźnień pozostały bardzo
+bliskie zeru. Oznacza to, że generator nie wykazuje silnych krótkookresowych zależności
+między kolejnymi bitami. Z punktu widzenia tego testu obie wersje generatora można
+uznać za poprawne, ponieważ nie pojawiły się wyraźne struktury świadczące o silnej
+korelacji czasowej.
+
+Analiza map 2D pokazała natomiast, że rozkład tworzonych słów nie jest idealnie
+jednorodny, szczególnie dla słów 4-bitowych. Zarówno przed wybielaniem, jak i po nim
+widoczne były obszary o większej i mniejszej liczbie zliczeń, co wskazuje na obecność
+pewnej nierównomierności rozkładu. Dla słów 8-bitowych mapy miały jednak znacznie
+bardziej jednorodny charakter wizualny i nie ujawniały silnych struktur geometrycznych.
+Sugeruje to, że główny problem generatora dotyczy raczej subtelnego biasu niż prostych,
+silnych zależności pomiędzy bardziej odległymi słowami.
+
+Najbardziej istotne różnice pomiędzy obiema wersjami generatora ujawniło badanie biasu.
+Dla strumienia bez wybielania uzyskano \(P(1)=0{,}501709\) oraz bias równy
+\(+0{,}001709\), co oznacza niewielką przewagę jedynek nad zerami.
+Po zastosowaniu wybielania metodą von Neumanna otrzymano natomiast
+\(P(1)=0{,}508572\) oraz bias równy \(+0{,}008572\). Oznacza to, że w analizowanej
+próbce wybielanie nie zmniejszyło biasu, lecz go zwiększyło.
+
+Wynik ten sugeruje, że badany generator nie spełnia w pełni założeń, przy których
+proste wybielanie von Neumanna skutecznie usuwa nierównowagę. Najbardziej prawdopodobną
+przyczyną są lokalne zależności pomiędzy kolejnymi bitami albo asymetria związana
+ze sposobem grupowania bitów w pary. Z tego powodu sama obecność procedury wybielania
+nie gwarantuje automatycznie poprawy jakości statystycznej strumienia.
+
+Podsumowując, generator oparty na ring oscylatorach w układzie FPGA wykazuje poprawne
+właściwości w teście autokorelacji, ale jednocześnie ujawnia zauważalną nierównomierność
+w analizie biasu oraz w części map 2D. W badanym przypadku wybielanie metodą
+von Neumanna nie poprawiło całościowego obrazu statystycznego i powinno być traktowane
+raczej jako element eksperymentu badawczego niż jako rozwiązanie, które automatycznie
+podnosi jakość uzyskiwanego strumienia bitów.
+
+W dalszych pracach zasadne byłoby sprawdzenie liczności par \(00\), \(01\), \(10\)
+oraz \(11\) bezpośrednio w strumieniu wejściowym, a także porównanie wyników dla dwóch
+sposobów parowania: od pierwszego oraz od drugiego bitu. Pozwoliłoby to lepiej ocenić,
+czy obserwowany wzrost biasu po wybielaniu wynika z właściwości samego źródła entropii,
+czy z efektu fazy podczas tworzenia par bitów.

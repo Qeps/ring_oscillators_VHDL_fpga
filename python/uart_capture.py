@@ -1,9 +1,9 @@
-from pathlib import Path
 import time
 
 import numpy as np
 import serial
 
+from user_func import bits_to_ascii_line
 from user_param import (
     CAPTURE_BITS,
     CAPTURE_OUTPUT_PATH,
@@ -29,10 +29,6 @@ def decode_uart_chunk_to_bits(raw: bytes, bit_order: str) -> np.ndarray:
     data = np.frombuffer(raw, dtype=np.uint8)
     unpack_order = "big" if bit_order == "msb" else "little"
     return np.unpackbits(data, bitorder=unpack_order)
-
-
-def bits_to_ascii_line(bits: np.ndarray) -> str:
-    return (bits + ord("0")).astype(np.uint8).tobytes().decode("ascii")
 
 
 def capture_one_series(

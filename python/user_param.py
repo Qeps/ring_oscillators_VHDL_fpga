@@ -21,6 +21,7 @@ MAP2D_WORD_SIZES: Word sizes used for 2D delay maps.
 MAP2D_TAUS: Delay values used for 2D delay maps.
 STEP: Bit step between consecutive extracted words for 2D maps.
 ANALYSIS_INPUT_PATH: Input path used by the analysis scripts.
+VN_OUTPUT_PATH: Output path for bits whitened by von_neumann.py.
 
 MAP2D_BINS: Number of histogram bins for 2D map (None = auto).
 BIAS_ALPHA: Significance level used by bias.py for PASS/FAIL.
@@ -54,7 +55,8 @@ MAX_LAG = 15
 MAP2D_WORD_SIZES = (4, 8)
 MAP2D_TAUS = tuple(range(9))
 STEP = None  # None = use step equal to current word size
-ANALYSIS_INPUT_PATH = CAPTURE_OUTPUT_PATH
+ANALYSIS_INPUT_PATH = Path(__file__).resolve().parent.parent / "vn_wh_bits.txt"
+VN_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "vn_wh_bits.txt"
 
 MAP2D_BINS = None
 BIAS_ALPHA = 0.01

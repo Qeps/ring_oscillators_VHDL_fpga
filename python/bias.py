@@ -4,54 +4,8 @@ from math import erfc, sqrt
 import matplotlib.pyplot as plt
 import numpy as np
 
-from user_param import ANALYSIS_INPUT_PATH, BIAS_ALPHA, OUT_PREFIX, SAVE_PLOTS
-
-
-def parse_bits_line(bit_text: str, line_no: int) -> np.ndarray:
-    raw = bit_text.encode("ascii")
-    data = np.frombuffer(raw, dtype=np.uint8)
-
-    valid = (data == ord("0")) | (data == ord("1"))
-    if not np.all(valid):
-        raise ValueError(f"Invalid character in input file at line {line_no}. Allowed: '0'/'1'.")
-
-    return (data - ord("0")).astype(np.uint8, copy=False)
-
-
-def load_bitstreams_from_file(path: Path) -> list[np.ndarray]:
-    if not path.exists():
-        raise FileNotFoundError(f"Input file not found: {path}")
-
-    bitstreams: list[np.ndarray] = []
-    expected_length: int | None = None
-
-    with path.open("r", encoding="ascii") as f:
-        for line_no, line in enumerate(f, start=1):
-            bit_text = line.strip()
-            if not bit_text or bit_text.startswith("#"):
-                continue
-
-            bits = parse_bits_line(bit_text, line_no)
-            if expected_length is None:
-                expected_length = len(bits)
-            elif len(bits) != expected_length:
-                raise ValueError(
-                    "Inconsistent bitstream length in input file: "
-                    f"line {line_no} has {len(bits)} bits, expected {expected_length}."
-                )
-
-            bitstreams.append(bits)
-
-    if not bitstreams:
-        raise ValueError("No bitstreams found in input file.")
-
-    return bitstreams
-
-
-def build_plot_path(suffix: str) -> Path | None:
-    if not SAVE_PLOTS:
-        return None
-    return OUT_PREFIX.parent / f"{OUT_PREFIX.name}_{suffix}"
+from user_func import bitstream_length_summary, build_output_path, load_bitstreams_from_file
+from user_param import ANALYSIS_INPUT_PATH, BIAS_ALPHA
 
 
 def analyze_bitstream(bits: np.ndarray, bitstream_idx: int, bitstream_count: int) -> dict[str, float | int | bool]:
@@ -182,7 +136,7 @@ def render_bias_table(
 def main() -> None:
     print(f"Loading captured bitstreams from: {ANALYSIS_INPUT_PATH}")
     bitstreams = load_bitstreams_from_file(ANALYSIS_INPUT_PATH)
-    print(f"Loaded {len(bitstreams)} bitstreams, {len(bitstreams[0])} bits each.")
+    print(f"Loaded {bitstream_length_summary(bitstreams)}")
 
     results: list[dict[str, float | int | bool]] = []
     for idx, bits in enumerate(bitstreams, start=1):
@@ -209,7 +163,7 @@ def main() -> None:
         results,
         overall_pass=overall_pass,
         passed_count=passed_count,
-        output=build_plot_path("bias_summary.png"),
+        output=build_output_path("bias_summary.png"),
     )
 
 

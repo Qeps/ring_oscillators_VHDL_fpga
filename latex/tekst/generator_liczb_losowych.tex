@@ -1,14 +1,163 @@
 \chapter{Generator liczb losowych w technice cyfrowej}
+\label{ch:generator-cyfrowy}
 
-Celem niniejszego rozdziału jest omówienie koncepcji cyfrowego generatora
-liczb losowych, ze szczególnym uwzględnieniem źródeł entropii oraz
-sprzętowej realizacji układu. Przedstawiono rolę oscylatora
-pierścieniowego jako elementu wprowadzającego niedeterministyczność oraz
-znaczenie platformy FPGA dla jakości i powtarzalności implementacji.
+Celem niniejszego rozdziału jest przedstawienie podstaw teoretycznych oraz stanu
+wiedzy niezbędnych do zrozumienia budowy i zasady działania generatora liczb
+losowych zaimplementowanego w układzie FPGA. Struktura rozdziału odpowiada
+logicznemu następstwu zagadnień: terminologia i klasyfikacja generatorów, model
+funkcjonalny generatora fizycznego wraz z wymaganiami, jakie musi on spełniać,
+a następnie koncepcja fizycznej realizacji losowości w strukturach cyfrowych.
+Szczególną uwagę poświęcono roli oscylatora pierścieniowego jako elementu
+wprowadzającego niedeterministyczność, mechanizmowi powstawania jitteru,
+architekturom ekstrakcji entropii oraz zjawiskom, które tę entropię ograniczają.
 
-\section{Entropia w generatorach cyfrowych}
+Aparat pomiarowy służący do ilościowej oceny tak zdefiniowanego generatora,
+to jest miary entropii oraz metody analizy statystycznej strumienia bitów,
+przedstawiono w rozdziale kolejnym. Podział ten jest celowy: niniejszy rozdział
+odpowiada na pytanie, \emph{skąd} bierze się losowość i jakie zjawiska mogą ją
+zaburzyć, natomiast rozdział następny na pytanie, \emph{jak} zaburzenia te
+wykryć i zmierzyć.
+
+\section{Generatory liczb losowych - klasyfikacja, model funkcjonalny i wymagania}
+\label{sec:klasyfikacja-wymagania}
+
+\subsection{Rola liczb losowych}
+\label{sec:rola-liczb-losowych}
+
+Liczby losowe są punktem wejściowym dla znacznej części mechanizmów
+bezpieczeństwa wielu systemów informatycznych. Wykorzystywane są do generowania
+kluczy kryptograficznych, wektorów inicjalizujących czy wartości jednorazowych
+(nonce). Poza zagadnieniami z dziedziny kryptografii losowość jest podstawą
+metod Monte Carlo, algorytmów probabilistycznych, generowania danych testowych
+oraz gier losowych.
+
+Kluczowym zagadnieniem w tych zastosowaniach jest błąd w generatorze. Nie jest
+to awaria funkcjonalna systemu, lecz cicha utrata bezpieczeństwa. System,
+którego generator ma zbyt małą entropię, działa poprawnie i przechodzi testy
+funkcjonalne, a jednocześnie produkuje klucze możliwe do odtworzenia przez
+atakującego. Praktycznym przykładem tego zjawiska jest sytuacja udokumentowana
+w badaniu Heningera i in.~\cite{heninger2012mining}, w którym wśród kilku
+milionów kluczy publicznych zebranych z urządzeń sieciowych wykryto liczne
+klucze powtarzające się lub współdzielące czynniki, co przypisywano
+niedostatecznej entropii w chwili pierwszego uruchomienia urządzenia.
+
+Wniosek jest następujący: jakość generatora nie może być wnioskowana wyłącznie
+z poprawnego działania systemu, lecz powinna być przedmiotem osobnego,
+ilościowego badania statystycznego. To założenie stanowi punkt wyjściowy
+niniejszej pracy.
+
+\subsection{Klasyfikacja generatorów}
+\label{sec:klasyfikacja}
+
+W literaturze oraz w dokumentach normalizacyjnych~\cite{nist_sp80090c}
+przyjmuje się następujący podział.
+
+Generatory deterministyczne DRNG (ang. \emph{Deterministic Random Number
+Generator}), potocznie zwane również PRNG, wytwarzają ciąg bitów jako
+deterministyczną funkcję stanu wewnętrznego zainicjowanego ziarnem (seed).
+Ciąg jest w pełni odtwarzalny, a entropia wyjścia, niezależnie od jego
+długości, nie przekracza entropii ziarna. Zaletami takiego rozwiązania są
+wysoka przepustowość, powtarzalność (istotna np. przy symulacjach) oraz
+przewidywalny koszt sprzętowy. Wadą jest zależność bezpieczeństwa od ziarna,
+które musi pochodzić z fizycznego źródła.
+
+Generatory fizyczne, prawdziwie losowe (TRNG, ang. \emph{True Random Number
+Generator}), pozyskują nieprzewidywalność z niepowtarzalnych procesów
+fizycznych: szumu termicznego, zjawisk kwantowych, metastabilności elementów
+bistabilnych. Ciąg wyjściowy nie jest odtwarzalny, a entropia rośnie wraz
+z długością ciągu. Wadami takiego rozwiązania są ograniczona i zależna od
+warunków pracy przepustowość, wrażliwość na temperaturę, napięcie zasilania
+i zakłócenia oraz konieczność stałego monitorowania poprawności działania.
+
+Generatory hybrydowe łączą źródło fizyczne z przetwarzaniem algorytmicznym:
+albo źródło fizyczne zasila generator deterministyczny (rozwiązanie dominujące
+w praktyce przemysłowej~\cite{killmann2011ais31}), albo surowe bity są
+poddawane kondycjonowaniu kryptograficznemu. Uzyskuje się w ten sposób wysoką
+przepustowość przy zachowaniu nieprzewidywalności.
+
+Generator badany w niniejszej pracy należy do drugiej kategorii. Analizie
+podlega strumień bitów pobierany bezpośrednio ze źródła fizycznego, przed
+kondycjonowaniem kryptograficznym, ponieważ dopiero taki strumień pozwala
+ocenić jakość samego źródła entropii. Zastosowanie silnej funkcji
+kondycjonującej maskuje bowiem defekty źródła, nie usuwając ich.
+
+\subsection{Model funkcjonalny generatora fizycznego}
+\label{sec:model-funkcjonalny}
+
+Zarówno AIS-31~\cite{killmann2011ais31}, jak i SP 800-90B~\cite{turan2018sp80090b}
+opisują generator fizyczny jako łańcuch przetwarzania, w którym każdy blok
+podlega odrębnej ocenie:
+
+\begin{enumerate}
+  \item \textbf{Źródło entropii} - element analogowy lub analogowo-cyfrowy,
+        w którym powstaje nieprzewidywalność (w układzie FPGA: szum fazowy
+        oscylatora, metastabilność).
+  \item \textbf{Digitalizacja (próbkowanie)} - przetworzenie zjawiska
+        ciągłego na ciąg bitów. Wynik nazywany jest \emph{surowym ciągiem
+        losowym} (ang. \emph{raw random numbers}).
+  \item \textbf{Kondycjonowanie / korekcja algorytmiczna} - poprawa
+        właściwości statystycznych i kompresja entropii (blok opcjonalny).
+  \item \textbf{Dodatkowe testy wbudowane} - test całkowitej awarii
+        (\emph{total failure test}), testy startowe oraz testy bieżące
+        (\emph{health tests}, \emph{online tests}), których zadaniem jest
+        wykrycie degradacji źródła w czasie pracy.
+  \item \textbf{Interfejs wyjściowy} - buforowanie i udostępnianie
+        wewnętrznych liczb losowych aplikacji.
+\end{enumerate}
+
+Podział ten ma bezpośrednie znaczenie dla części doświadczalnej pracy.
+Właściwości statystyczne mierzone na wyjściu bloku drugiego opisują jakość
+samego źródła, natomiast pomiar wykonany po bloku trzecim opisuje już
+właściwości łańcucha przetwarzania jako całości. Rozdzielenie tych dwóch
+punktów pomiarowych pozwala stwierdzić, czy poprawa parametrów statystycznych
+wynika ze wzrostu entropii źródła, czy wyłącznie z działania korekcji
+algorytmicznej.
+
+\subsection{Wymagania stawiane generatorowi w układzie FPGA}
+\label{sec:wymagania}
+
+Praktyczne wymagania stawiane generatorowi w układzie FPGA można ująć
+w następujących kategoriach:
+
+\begin{itemize}
+  \item \textbf{entropia na bit} - ilość entropii wewnętrznych liczb losowych
+        przypadająca na bit wyjściowy. Dokumenty normalizacyjne posługują się
+        przy tym różnymi miarami: AIS-31~\cite{killmann2011ais31} przyjmuje
+        entropię Shannona, natomiast SP 800-90B~\cite{turan2018sp80090b}
+        min-entropię, czyli miarę najgorszego przypadku. Ponieważ min-entropia
+        jest miarą konserwatywną i bezpośrednio odpowiada odporności na
+        odgadnięcie wartości, w niniejszej pracy traktuje się ją jako
+        właściwe kryterium oceny; szczegółowe porównanie obu miar wraz
+        z uzasadnieniem tego wyboru przedstawiono w rozdziale następnym.
+  \item \textbf{przepustowość} - od kilkudziesięciu kbit/s (generowanie
+        kluczy) do setek Mbit/s (maskowanie, protokoły wysokoprzepustowe).
+  \item \textbf{zasoby} - liczba komórek LUT, bloków pamięci
+        i zasobów specjalnych (PLL/MMCM), a także pobór mocy.
+  \item \textbf{odporność środowiskowa} - zachowanie parametrów w pełnym
+        zakresie temperatury, napięcia i procesu (PVT).
+  \item \textbf{odporność na ataki} - pasywne (analiza emisji
+        elektromagnetycznej, analiza poboru mocy) i aktywne (wstrzykiwanie
+        częstotliwości, manipulacja zasilaniem).
+  \item \textbf{przenośność} - możliwość implementacji w różnych rodzinach
+        układów bez utraty jakości.
+  \item \textbf{testowalność} - możliwość obserwacji surowego strumienia
+        bitów przed kondycjonowaniem, będąca warunkiem koniecznym zarówno
+        certyfikacji, jak i badania przeprowadzonego w niniejszej pracy.
+\end{itemize}
+
+Wymagania te pozostają ze sobą w konflikcie. Zwiększanie przepustowości przez
+skrócenie okresu próbkowania obniża entropię na bit, ponieważ zmniejsza czas
+akumulacji jitteru. Zwielokrotnienie liczby źródeł podnosi entropię, lecz
+zwiększa zużycie zasobów i pobór mocy, a przy zbyt ciasnym rozmieszczeniu
+prowadzi do zjawisk opisanych w podrozdziale~\ref{sec:zjawiska-ograniczajace}.
+Projektowanie generatora jest zatem poszukiwaniem kompromisu, którego
+poprawność można ocenić jedynie pomiarowo.
 
 \section{Oscylator pierścieniowy jako źródło entropii}
+\label{sec:oscylator-pierscieniowy}
+
+\subsection{Zasada działania}
+\label{sec:zasada-dzialania}
 
 Oscylator pierścieniowy (ang. \emph{ring oscillator}) jest jednym z
 najprostszych układów generujących sygnał okresowy w technologiach
@@ -21,45 +170,235 @@ kolejno odwracany przez każdy inwerter. Ponieważ liczba inwerterów jest
 nieparzysta, układ nie może osiągnąć stabilnego stanu logicznego.
 Zamiast tego powstaje ciągła oscylacja pomiędzy stanem wysokim i niskim.
 Częstotliwość tych oscylacji zależy głównie od sumy opóźnień propagacji
-poszczególnych bramek.
+poszczególnych bramek. Dla pierścienia złożonego z $N$ inwerterów o średnim
+opóźnieniu propagacji $t_p$ okres oscylacji wynosi w przybliżeniu
+
+\begin{equation}
+  T_{osc} \approx 2 N t_p ,
+  \label{eq:okres-oscylatora}
+\end{equation}
+
+co oznacza, że częstotliwością można sterować liczbą elementów w pętli.
+Zależność ta jest jednak wyłącznie przybliżeniem wartości średniej; istotne
+z punktu widzenia generowania losowości jest to, że rzeczywisty okres
+poszczególnych cykli podlega fluktuacjom.
+
+\subsection{Jitter jako zjawisko fizyczne i jego model stochastyczny}
+\label{sec:jitter}
 
 Istotną cechą oscylatora pierścieniowego jest jego podatność na zjawiska
 fizyczne zachodzące w strukturze krzemowej. Szumy termiczne, fluktuacje
-napięcia zasilania, zmiany temperatury oraz lokalne różnice
-technologiczne powodują losowe zmiany opóźnień propagacji. Skutkiem tego
-jest nieregularność okresu sygnału, określana jako jitter, który stanowi
-praktyczne źródło entropii w wielu konstrukcjach TRNG.\cite{sunar2006provably,saarinen2021entropy}
+napięcia zasilania, zmiany temperatury oraz lokalne różnice technologiczne
+powodują losowe zmiany opóźnień propagacji. Skutkiem tego jest
+nieregularność okresu sygnału, określana jako jitter, stanowiąca praktyczne
+źródło entropii w wielu konstrukcjach
+TRNG~\cite{sunar2006provably,saarinen2021entropy}.
 
-Losowy charakter jittera sprawia, że oscylator pierścieniowy może pełnić
-rolę źródła entropii w cyfrowych generatorach liczb losowych. W praktyce
-entropia pozyskiwana jest poprzez próbkowanie sygnału oscylatora lub
-porównywanie faz i częstotliwości wielu niezależnych oscylatorów.
-Dobór parametrów próbkowania i architektury ma bezpośredni wpływ na
-entropię na bit i odporność na zakłócenia.\cite{ma2014entropy}
+Dla oceny generatora kluczowe jest rozróżnienie dwóch składowych tego
+zjawiska, ponieważ tylko jedna z nich niesie entropię:
 
-Dzięki prostocie, niewielkim wymaganiom sprzętowym i dobrej skalowalności
-w nowoczesnych procesach technologicznych, oscylatory pierścieniowe są
-powszechnie wykorzystywane jako elementy generatorów liczb losowych w
-układach FPGA, mikrokontrolerach oraz systemach kryptograficznych.
+\begin{itemize}
+  \item \textbf{jitter losowy} (ang. \emph{random jitter}) - wynika ze
+        zjawisk o charakterze szumowym, przede wszystkim szumu termicznego
+        w kanałach tranzystorów. Fluktuacje kolejnych okresów można
+        traktować jako niezależne, o rozkładzie w przybliżeniu normalnym.
+        Jest to jedyna składowa, którą wolno uznać za źródło entropii.
+  \item \textbf{jitter deterministyczny} (ang. \emph{deterministic jitter}) -
+        wynika ze sprzężeń z sygnałami obecnymi w układzie: zegarem
+        systemowym, przebiegami na liniach zasilania, aktywnością sąsiednich
+        bloków logicznych. Ma charakter okresowy lub skorelowany
+        z aktywnością układu, jest zatem z zasady przewidywalny i nie
+        stanowi entropii, mimo że powiększa obserwowaną wariancję okresu.
+\end{itemize}
+
+Rozróżnienie to jest podstawą modelu stochastycznego wymaganego przez
+AIS-31~\cite{killmann2011ais31}. Przyjmując, że fluktuacje kolejnych okresów
+są niezależne i mają odchylenie standardowe $\sigma_1$, wariancja
+akumulowanej fazy po czasie obserwacji $t_{acc}$ narasta liniowo z liczbą
+przebytych okresów:
+
+\begin{equation}
+  \sigma^2(t_{acc}) = \frac{t_{acc}}{T_{osc}}\,\sigma_1^{2},
+  \label{eq:akumulacja-jitteru}
+\end{equation}
+
+skąd odchylenie standardowe fazy rośnie proporcjonalnie do
+$\sqrt{t_{acc}}$. Konsekwencja praktyczna tej zależności jest zasadnicza:
+entropia pojedynczego bitu zależy od stosunku zakumulowanej niepewności
+fazy do okresu sygnału próbkowanego. Jeżeli okres próbkowania jest zbyt
+krótki, niepewność nie osiąga skali umożliwiającej nieprzewidywalny wynik
+kwantyzacji, a kolejne bity pozostają wzajemnie zależne. Zależność między
+parametrami próbkowania a entropią na bit stanowi przedmiot modeli
+przedstawionych w literaturze~\cite{ma2014entropy,saarinen2021entropy},
+przy czym wspólnym wnioskiem jest istnienie dolnej granicy okresu
+próbkowania, poniżej której generator traci właściwości statystyczne
+niezależnie od pozostałych elementów konstrukcji.
+
+Model ten wyjaśnia zarazem, dlaczego badanie generatora nie może ograniczać
+się do rozkładu zer i jedynek. Niedostateczna akumulacja jitteru objawia się
+przede wszystkim jako zależność między kolejnymi bitami, natomiast jitter
+deterministyczny jako składowa okresowa w strumieniu. Obie te postacie
+defektu są niewidoczne dla pomiaru samej częstości bitów, a wykrywalne
+metodami przedstawionymi w rozdziale następnym.
+
+\subsection{Architektury ekstrakcji entropii}
+\label{sec:architektury-ekstrakcji}
+
+Sam oscylator pierścieniowy nie jest jeszcze generatorem. Entropia zawarta
+w jitterze musi zostać przeniesiona na ciąg bitów, a sposób realizacji tego
+przeniesienia decyduje o entropii na bit oraz o przepustowości. W literaturze
+wyodrębnia się kilka rozwiązań podstawowych.
+
+\textbf{Próbkowanie elementarne (ERO, ang. \emph{elementary ring oscillator}).}
+Sygnał oscylatora o wysokiej częstotliwości jest próbkowany przerzutnikiem
+taktowanym sygnałem o częstotliwości znacznie niższej, pochodzącym
+z niezależnego źródła. Rozwiązanie wymaga minimalnych zasobów, lecz osiągnięcie
+zadowalającej entropii na bit wymusza bardzo niską częstotliwość próbkowania,
+ponieważ konieczna jest akumulacja jitteru zgodnie
+z zależnością~\eqref{eq:akumulacja-jitteru}. Przepustowość jest zatem
+niewielka.
+
+\textbf{Wiele oscylatorów sumowanych funkcją XOR (MURO, ang. \emph{multiple
+ring oscillators}).} Rozwiązanie polega na zwielokrotnieniu liczby
+niezależnych oscylatorów i zsumowaniu ich spróbkowanych wyjść funkcją XOR.
+Podejście to, przedstawione w pracy Sunara i in.~\cite{sunar2006provably},
+pozwala zwiększyć przepustowość przy zachowaniu entropii, a funkcja XOR
+zapewnia dodatkowo, że pojedynczy oscylator o obniżonej jakości nie
+zdominuje wyniku. Warunkiem poprawności tej konstrukcji jest jednak
+\emph{wzajemna niezależność} oscylatorów, założenie w praktyce trudne do
+spełnienia, o czym mowa w podrozdziale~\ref{sec:zjawiska-ograniczajace}.
+Właśnie ta architektura, jako wykorzystująca zwielokrotnione źródła,
+stanowi punkt odniesienia dla generatora badanego w niniejszej pracy.
+
+\textbf{Próbkowanie koherentne (COSO, ang. \emph{coherent sampling}).}
+Wykorzystuje się dwa oscylatory o bardzo zbliżonych, lecz nieidentycznych
+częstotliwościach i mierzy liczbę okresów jednego z nich mieszczącą się
+w okresie zdudnienia obu sygnałów. Wynik pomiaru jest tym bardziej czuły na
+jitter, im mniejsza jest różnica częstotliwości, co pozwala uzyskać wysoką
+entropię przy umiarkowanym zużyciu zasobów. Rozwiązania tego typu są
+podstawą konstrukcji przenośnych, zachowujących właściwości niezależnie od
+rodziny układu~\cite{peetermans2019portable}.
+
+\textbf{Konstrukcje oparte na pętlach PLL oraz na sterowanym starcie
+i zatrzymaniu oscylatora.} Zamiast swobodnie oscylującego pierścienia
+stosuje się generowanie sygnałów o precyzyjnie ustalonym stosunku
+częstotliwości albo cykliczne uruchamianie i zatrzymywanie oscylatora, tak
+aby faza początkowa każdego cyklu pomiarowego była niezależna od
+poprzedniego. Rozwiązania tej klasy pozwalają zwiększyć przepustowość przy
+zachowaniu deterministycznej latencji i przenośności między
+platformami~\cite{matuszewski2024startstop}.
+
+Wybór architektury jest zatem wyborem punktu na krzywej kompromisu między
+entropią na bit, przepustowością i zużyciem zasobów. Żadna z nich nie
+gwarantuje jednak samoczynnie jakości strumienia, ponieważ wszystkie opierają
+się na założeniach dotyczących niezależności źródeł i skali jitteru, których
+spełnienie w konkretnej implementacji podlega weryfikacji pomiarowej.
+
+\subsection{Zjawiska ograniczające entropię}
+\label{sec:zjawiska-ograniczajace}
+
+Realna entropia generatora opartego na oscylatorach jest z reguły niższa od
+wartości wynikającej z modelu idealnego. Odpowiadają za to następujące
+zjawiska.
+
+\textbf{Wzajemna synchronizacja oscylatorów.} Oscylatory pierścieniowe
+umieszczone blisko siebie w strukturze układu oddziałują poprzez wspólną sieć
+zasilania oraz sprzężenia pojemnościowe między ścieżkami. Skutkiem jest
+tendencja do wzajemnego przyciągania faz i częstotliwości, prowadząca do
+częściowej lub pełnej synchronizacji. Zjawisko to jest szczególnie groźne
+w architekturach zwielokrotnionych: jeżeli spośród $n$ zaimplementowanych
+oscylatorów efektywnie niezależnych pozostaje jedynie $k < n$, to entropia
+strumienia odpowiada $k$, a nie $n$ źródłom, przy niezmienionym zużyciu
+zasobów. Co istotne, synchronizacja nie musi objawiać się zmianą rozkładu
+zer i jedynek na wyjściu; ujawnia się natomiast jako korelacja między
+strumieniami pochodzącymi z poszczególnych źródeł oraz jako struktura
+okresowa w strumieniu wypadkowym.
+
+\textbf{Dominacja jitteru deterministycznego.} Jeżeli udział składowej
+deterministycznej w obserwowanej wariancji okresu jest znaczny, oszacowanie
+entropii oparte na całkowitej wariancji jest zawyżone. Praktyczną
+konsekwencją jest zawyżona ocena jakości generatora przy jednoczesnej
+obecności składowej periodycznej w strumieniu.
+
+\textbf{Wrażliwość na warunki pracy.} Zarówno częstotliwość oscylacji, jak
+i amplituda jitteru zależą od temperatury i napięcia zasilania. Generator
+poprawny w warunkach nominalnych może utracić właściwości statystyczne
+w skrajnych punktach zakresu pracy, co uzasadnia wymóg testów bieżących
+w modelu funkcjonalnym z podrozdziału~\ref{sec:model-funkcjonalny}.
+
+\textbf{Podatność na ataki aktywne.} Wstrzykiwanie sygnału o częstotliwości
+zbliżonej do częstotliwości oscylatora albo celowa modulacja napięcia
+zasilania mogą wymusić synchronizację źródeł, a w skrajnym przypadku
+sprowadzić strumień wyjściowy do postaci przewidywalnej. Odporność na tego
+rodzaju oddziaływania jest jednym z motywów stosowania architektur
+zwielokrotnionych~\cite{sunar2006provably}.
+
+Wspólną cechą powyższych zjawisk jest to, że żadne z nich nie objawia się
+w sposób oczywisty w działaniu układu. Ich wykrycie wymaga celowanego
+pomiaru: analizy zależności czasowych w strumieniu oraz porównania strumieni
+pochodzących z poszczególnych źródeł. Wyznacza to zakres badania
+przeprowadzonego w dalszej części pracy.
 
 \section{Implementacja generatora w strukturach FPGA}
+\label{sec:implementacja-fpga}
 
 Układy FPGA (ang. \emph{Field Programmable Gate Array}) stanowią
 elastyczną platformę do implementacji cyfrowych generatorów liczb
 losowych, w tym konstrukcji bazujących na jitterze oscylatorów
 pierścieniowych. Architektura oparta na programowalnych blokach logicznych
 i rekonfigurowalnych połączeniach umożliwia bezpośrednią realizację
-struktur sprzętowych i ich równoległe zwielokrotnienie.\cite{peetermans2019portable}
+struktur sprzętowych i ich równoległe
+zwielokrotnienie~\cite{peetermans2019portable}.
 
 W przeciwieństwie do rozwiązań programowych, implementacja generatora
 w strukturze FPGA pozwala na kontrolę nad topologią, sposobem próbkowania
 oraz logiką post-processingu. Jest to istotne, ponieważ zarówno jakość
 źródła entropii, jak i mechanizm jej ekstrakcji wpływają na końcową
-losowość strumienia bitów.\cite{ma2014entropy}
+losowość strumienia bitów~\cite{ma2014entropy}.
+
+Platforma ta wprowadza jednak ograniczenia nieobecne w realizacjach
+dedykowanych. Rozmieszczenie elementów w strukturze układu jest wynikiem
+działania narzędzi implementacyjnych, przez co odległości między
+oscylatorami, a zatem i skala ich wzajemnego oddziaływania, nie są w pełni
+kontrolowane przez projektanta. Narzędzia syntezy dążą ponadto do
+eliminowania struktur kombinacyjnych zawierających pętle sprzężenia
+zwrotnego, traktując je jako błąd projektowy. Zachowanie oscylatorów
+w postaci zamierzonej wymaga zatem jawnego blokowania optymalizacji, co
+sprawia, że jakość uzyskanego źródła entropii zależy nie tylko od koncepcji
+układowej, lecz również od sposobu przeprowadzenia implementacji.
 
 W praktyce platformy FPGA są często wybierane w zastosowaniach
 wymagających wysokiej przepustowości i deterministycznej latencji,
 a także tam, gdzie istotna jest przenośność rozwiązania pomiędzy
 różnymi rodzinami układów. Przykładem są współczesne konstrukcje TRNG
 projektowane tak, aby zachowywać właściwości statystyczne niezależnie
-od producenta i szczegółów technologii.\cite{matuszewski2024startstop}
+od producenta i szczegółów technologii~\cite{matuszewski2024startstop}.
+
+\section{Podsumowanie}
+\label{sec:podsumowanie-generator}
+
+Z przedstawionego materiału wynikają trzy wnioski wyznaczające zakres części
+doświadczalnej pracy.
+
+Po pierwsze, entropia generatora fizycznego jest właściwością źródła, nie
+strumienia bitów, i nie może być wnioskowana z poprawnego działania układu.
+Jej ocena wymaga osobnego badania ilościowego, prowadzonego na surowym
+strumieniu, przed kondycjonowaniem algorytmicznym.
+
+Po drugie, entropia oscylatora pierścieniowego pochodzi wyłącznie ze
+składowej losowej jitteru i zależy od czasu jego akumulacji względem okresu
+próbkowania. Zarówno zbyt krótki okres próbkowania, jak i dominacja jitteru
+deterministycznego prowadzą do obniżenia entropii, przy czym oba defekty
+objawiają się jako zależności czasowe w strumieniu, nie jako zaburzenie
+rozkładu zer i jedynek.
+
+Po trzecie, architektury oparte na zwielokrotnionych źródłach opierają się
+na założeniu ich wzajemnej niezależności, którego spełnienie w konkretnej
+implementacji nie jest zagwarantowane ze względu na zjawisko wzajemnej
+synchronizacji oscylatorów.
+
+Wnioski te wskazują, jakie własności strumienia należy poddać pomiarowi:
+rozkład brzegowy bitów, zależności czasowe w obrębie jednego strumienia
+oraz zależności między strumieniami pochodzącymi z różnych źródeł. Miary
+entropii pozwalające wyrazić te własności liczbowo oraz metody statystyczne
+służące ich wykrywaniu przedstawiono w rozdziale następnym.

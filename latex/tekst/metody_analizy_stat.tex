@@ -1,4 +1,459 @@
 \chapter{Metody analizy statystycznej strumienia bitów losowych}
-\section{Pojęcie losowości w sekwencjach binarnych}
-\section{Podstawowe właściwości statystyczne strumienia bitów}
-\section{Testy statystyczne stosowane w ocenie generatorów liczb losowych}
+
+Rozdział łączy omówienie miar entropii, pojęcia losowości oraz metod analizy
+statystycznej. Połączenie to jest celowe: entropii nie da się omówić bez
+wskazania konkretnej miary, a każda praktycznie stosowana miara entropii jest
+estymowana z ciągu bitów procedurami statystycznymi. Metody analizy
+statystycznej nie są zatem oddzielnym zagadnieniem, lecz aparatem pomiarowym
+entropii.
+
+\section{Miary entropii}
+
+Niech $X$ będzie dyskretną zmienną losową o rozkładzie $p_1,\dots,p_n$.
+Stosowane w ocenie generatorów miary tworzą rodzinę entropii Rényiego
+rzędu $\alpha$ \cite{renyi1961}:
+%
+\begin{equation}
+  H_\alpha(X) = \frac{1}{1-\alpha}\log_2\sum_{i=1}^{n} p_i^{\alpha},
+  \qquad \alpha > 0,\ \alpha \neq 1 .
+  \label{eq:renyi}
+\end{equation}
+%
+Szczególne przypadki wyrażenia \eqref{eq:renyi} mają w kontekście generatorów
+odrębną interpretację:
+
+\begin{itemize}
+  \item \textbf{entropia Shannona} ($\alpha \to 1$):
+        \begin{equation}
+          H_1(X) = -\sum_{i=1}^{n} p_i \log_2 p_i ,
+          \label{eq:shannon}
+        \end{equation}
+        średnia liczba bitów informacji na symbol, miara przyjęta
+        w AIS-31 \cite{killmann2011ais31};
+  \item \textbf{entropia kolizji} ($\alpha = 2$):
+        \begin{equation}
+          H_2(X) = -\log_2\sum_{i=1}^{n} p_i^2 ,
+          \label{eq:kolizji}
+        \end{equation}
+        związana z prawdopodobieństwem kolizji, wykorzystywana
+        w estymatorach i w twierdzeniach o ekstrakcji losowości;
+  \item \textbf{min-entropia} ($\alpha \to \infty$):
+        \begin{equation}
+          H_\infty(X) = -\log_2 \max_{i} p_i ,
+          \label{eq:minentropia}
+        \end{equation}
+        miara najgorszego przypadku, odpowiadająca prawdopodobieństwu
+        odgadnięcia wartości przy jednej próbie, podstawowa miara
+        w SP 800-90B \cite{turan2018sp80090b}.
+\end{itemize}
+
+Zachodzi porządek
+%
+\begin{equation}
+  H_\infty(X) \le H_2(X) \le H_1(X) \le \log_2 n ,
+  \label{eq:porzadek}
+\end{equation}
+%
+przy czym w zastosowaniach kryptograficznych istotna jest właśnie miara
+najsłabsza. Ilustruje to przykład źródła Bernoulliego o obciążeniu $p$,
+zestawiony w tabeli \ref{tab:entropia-obciazenie}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Entropia Shannona i min-entropia źródła Bernoulliego
+           w funkcji obciążenia}
+  \label{tab:entropia-obciazenie}
+  \begin{tabular}{ccc}
+    \hline
+    $p = P(X = 1)$ & $H_1$ [bit/bit] & $H_\infty$ [bit/bit] \\
+    \hline
+    $0{,}50$ & $1{,}000$ & $1{,}000$ \\
+    $0{,}55$ & $0{,}993$ & $0{,}862$ \\
+    $0{,}60$ & $0{,}971$ & $0{,}737$ \\
+    $0{,}70$ & $0{,}881$ & $0{,}515$ \\
+    $0{,}80$ & $0{,}722$ & $0{,}322$ \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Dla małego obciążenia $p = \tfrac{1}{2} + \varepsilon$ zachodzą przybliżenia
+%
+\begin{equation}
+  H_1 \approx 1 - \frac{2}{\ln 2}\,\varepsilon^2 ,
+  \qquad
+  H_\infty \approx 1 - \frac{2}{\ln 2}\,\varepsilon .
+  \label{eq:przyblizenia}
+\end{equation}
+%
+Entropia Shannona maleje więc kwadratowo, a min-entropia liniowo. Pierwsza
+z miar jest zatem nadmiernie \emph{optymistyczna}: źródło o obciążeniu
+$p = 0{,}6$ wygląda w niej niemal idealnie ($0{,}971$), a w kategoriach
+odgadywalności traci ponad jedną czwartą siły. Dla klucza 128-bitowego
+złożonego z takich bitów efektywna siła wynosi około 94 bity.
+
+\subsection{Entropia źródeł z pamięcią}
+
+W przypadku źródeł z pamięcią rozkład brzegowy nie wystarcza - konieczne
+jest posługiwanie się \textbf{entropią warunkową}
+$H(X_n \mid X_{n-1},\dots,X_1)$ oraz \textbf{stopą entropii} procesu
+stacjonarnego \cite{cover2006elements}:
+%
+\begin{equation}
+  \bar{H} = \lim_{n \to \infty} \frac{1}{n} H(X_1,\dots,X_n),
+  \label{eq:stopa-entropii}
+\end{equation}
+%
+a w praktyce modelami Markowa skończonego rzędu. Zaniedbanie zależności
+czasowych jest jednym z najczęstszych błędów oceny generatorów sprzętowych:
+ciąg o idealnym rozkładzie brzegowym i silnej autokorelacji ma stopę entropii
+znacznie mniejszą od jedności.
+
+Znaczenie tego rozróżnienia dla praktyki pomiarowej jest bezpośrednie.
+Rozkład brzegowy bada się miarą obciążenia (bias) i testem monobitowym,
+natomiast obecność pamięci - funkcją autokorelacji oraz rozkładem słów
+wielobitowych. Są to dwie \emph{niezależne} rodziny własności: strumień może
+przejść pomiarowo pierwszą z nich i całkowicie zawieść w drugiej. Dlatego
+w części doświadczalnej niniejszej pracy oba aspekty analizowane są osobno,
+a nie jako pojedyncza ocena jakości strumienia.
+
+Dla źródła o obciążeniu $p$ i jednorodnym łańcuchu Markowa pierwszego rzędu
+o prawdopodobieństwach przejścia $P(X_n \ne X_{n-1}) = q$ stopa entropii
+wynosi
+%
+\begin{equation}
+  \bar{H} = H_1(q) = -q\log_2 q - (1-q)\log_2(1-q),
+  \label{eq:markov-stopa}
+\end{equation}
+%
+co pokazuje, że symetryczny rozkład brzegowy ($p = 0{,}5$, osiągalny przy
+dowolnym $q$) nie daje żadnej gwarancji co do faktycznej entropii na bit:
+dla $q \to 0$ (ciąg złożony z długich serii) lub $q \to 1$ (ciąg
+naprzemienny) stopa entropii dąży do zera przy zachowaniu idealnego
+rozkładu zer i jedynek.
+
+\section{Pojęcie ciągu losowego}
+
+Miary wprowadzone powyżej opisują \emph{źródło}. Osobnym pytaniem jest, co
+znaczy, że konkretny \emph{ciąg} jest losowy. Historycznie ukształtowały się
+trzy podejścia do formalizacji tego pojęcia.
+
+\paragraph{Podejście częstościowe (statystyczne).}
+Zapoczątkowane przez Richarda von Misesa pojęcie Kollektiv (collective)
+wymaga, aby częstości symboli w ciągu i we wszystkich jego podciągach
+wybranych dopuszczalną regułą były zbieżne do wartości oczekiwanych.
+Jean Ville wykazał, że warunki tego typu nie wystarczają - istnieją ciągi
+spełniające je, a jednocześnie wykazujące jawną regularność (np. sumy
+częściowe zawsze po jednej stronie wartości oczekiwanej). Podejście to jest
+natomiast bezpośrednim źródłem konstrukcji testów statystycznych: każdy test
+bada jedną wybraną własność częstościową.
+
+\paragraph{Podejście złożonościowe.}
+Według Kołmogorowa \cite{kolmogorov1965three} i Martina-Löfa ciąg jest
+losowy, jeśli nie istnieje jego opis krótszy od samego ciągu - oznacza to,
+że złożoność algorytmiczna jest bliska jego długości. Złożoność Kołmogorowa
+jest nieobliczalna, co oznacza, że nie istnieje uniwersalny, skończony test
+losowości. Ma to fundamentalną konsekwencję praktyczną: badanie generatora
+może jedynie falsyfikować hipotezę o losowości, nigdy natomiast jej nie
+potwierdzi.
+
+\paragraph{Podejście obliczeniowe (nieprzewidywalność).}
+W kryptografii przyjmuje się kryterium nieodróżnialności obliczeniowej od
+ciągu idealnego oraz test następnego bitu: generator jest bezpieczny, jeśli
+żaden algorytm o ograniczonych zasobach nie przewiduje kolejnego bitu
+z prawdopodobieństwem istotnie większym niż $1/2$. Do tego dochodzą wymagania
+odporności wprzód i wstecz (ang. \emph{forward/backward secrecy}): ujawnienie
+stanu wewnętrznego nie może pozwalać na odtworzenie bitów wcześniejszych ani
+przyszłych.
+
+\subsection{Entropia jako własność źródła, nie ciągu}
+
+Warto na tym tle wskazać ograniczenie testów statystycznych. Rejestr LFSR
+o pełnym okresie i długości $m$ generuje ciąg, którego entropia -
+niezależnie od jego długości - wynosi dokładnie $m$ bitów, a mimo to ciąg
+ten przechodzi wszystkie testy pakietu SP 800-22 poza testem złożoności
+liniowej. Entropia jest właściwością źródła, nie ciągu; testy statystyczne
+mierzą jedynie zgodność obserwowanego ciągu z rozkładem odniesienia.
+
+Wniosek ten wyznacza rolę, jaką analiza statystyczna może w ogóle odgrywać
+w ocenie generatora. Nie dostarcza ona dowodu losowości, lecz zestaw
+warunków koniecznych: wykrywa te odstępstwa od modelu idealnego, dla których
+skonstruowano odpowiedni test. Odstępstwa nieobjęte żadnym testem pozostają
+niewidoczne, dlatego ocena empiryczna musi zawsze towarzyszyć uzasadnieniu
+opartemu na modelu fizycznym źródła.
+
+\section{Aparat testowania hipotez}
+
+Każdy test statystyczny losowości ma tę samą strukturę formalną. Formułuje
+się hipotezę zerową
+%
+\begin{equation}
+  H_0: \text{badany ciąg jest realizacją źródła i.i.d. o } P(0) = P(1) = \tfrac{1}{2},
+  \label{eq:h0}
+\end{equation}
+%
+wyznacza statystykę testową $T$, której rozkład przy prawdziwości $H_0$ jest
+znany (najczęściej asymptotycznie normalny lub $\chi^2$), i oblicza się
+wartość $p$ jako prawdopodobieństwo uzyskania wyniku co najmniej tak
+skrajnego jak zaobserwowany:
+%
+\begin{equation}
+  p = P\big(|T| \ge |t_{\mathrm{obs}}| \;\big|\; H_0\big).
+  \label{eq:pvalue}
+\end{equation}
+%
+Hipotezę odrzuca się, gdy $p < \alpha$, gdzie $\alpha$ jest przyjętym
+poziomem istotności (w pakiecie SP 800-22 standardowo $\alpha = 0{,}01$).
+Interpretacja wyniku wymaga trzech zastrzeżeń, istotnych dla poprawnego
+odczytania rezultatów pomiarowych.
+
+Po pierwsze, $p \ge \alpha$ oznacza wyłącznie brak podstaw do odrzucenia
+$H_0$, nigdy jej potwierdzenia - co jest bezpośrednią konsekwencją
+nieobliczalności złożoności Kołmogorowa omówionej wcześniej.
+
+Po drugie, przy wielokrotnym testowaniu odrzucenia pojawiają się z
+częstością $\alpha$ nawet dla źródła idealnego. Dla $k$ niezależnych testów
+oczekiwana liczba fałszywych odrzuceń wynosi $k\alpha$, a przy $\alpha = 0{,}01$
+i $k = 100$ podciągach jedno odrzucenie jest wynikiem \emph{typowym}, nie
+sygnałem błędu. Poprawnym kryterium jest więc nie „brak odrzuceń”, lecz
+zgodność \emph{rozkładu} uzyskanych wartości $p$ z rozkładem jednostajnym
+$U(0,1)$, badana testem $\chi^2$ lub testem Kołmogorowa--Smirnowa.
+
+Po trzecie, moc testu rośnie z długością ciągu. Odstępstwo o ustalonej
+wielkości - np. obciążenie $\varepsilon$ - pozostaje niewykrywalne dla
+próby zbyt małej i jest wykrywane niemal zawsze dla próby dostatecznie
+dużej. Wielkość odstępstwa (rozmiar efektu) i jego istotność statystyczna
+są zatem pojęciami rozłącznymi: przy strumieniu rzędu $10^8$ bitów wykrywalne
+stają się obciążenia praktycznie nieistotne z punktu widzenia entropii,
+i odwrotnie --- krótki rekord nie pozwala orzec o braku obciążenia.
+
+\section{Analiza rozkładu brzegowego: obciążenie i test monobitowy}
+
+Najprostszą badaną własnością jest zgodność częstości jedynek z wartością
+oczekiwaną $1/2$. Dla ciągu $b_1,\dots,b_N$ definiuje się częstość empiryczną
+i obciążenie
+%
+\begin{equation}
+  \hat{p} = \frac{1}{N}\sum_{i=1}^{N} b_i ,
+  \qquad
+  \varepsilon = \hat{p} - \tfrac{1}{2}.
+  \label{eq:bias}
+\end{equation}
+%
+W teście monobitowym (test częstości, \emph{frequency test}) stosuje się
+statystykę opartą na sumie ciągu przekształconego do postaci $\pm 1$,
+$S_N = \sum_{i=1}^{N}(2b_i - 1)$, dla której przy prawdziwości $H_0$
+z centralnego twierdzenia granicznego wynika
+%
+\begin{equation}
+  Z = \frac{|S_N|}{\sqrt{N}} \;\xrightarrow{\;d\;}\; |\mathcal{N}(0,1)| ,
+  \qquad
+  p = \operatorname{erfc}\!\left(\frac{|S_N|}{\sqrt{2N}}\right).
+  \label{eq:monobit}
+\end{equation}
+%
+Odchylenie standardowe estymatora $\hat{p}$ wynosi $1/(2\sqrt{N})$, co
+wyznacza rozdzielczość pomiaru: przy $N = 10^6$ bitów niepewność oszacowania
+obciążenia jest rzędu $5\cdot 10^{-4}$, a obciążenia mniejsze od tej wartości
+nie są odróżnialne od fluktuacji statystycznej. Ma to znaczenie przy
+porównywaniu obciążeń poszczególnych kanałów generatora - różnica między
+nimi jest istotna tylko wtedy, gdy przekracza niepewność wynikającą z
+długości rekordu.
+
+Powiązanie z miarami entropii jest bezpośrednie: podstawienie $\hat{p}$ do
+wzorów \eqref{eq:shannon} i \eqref{eq:minentropia} daje estymatory entropii
+Shannona i min-entropii \emph{przy założeniu niezależności bitów}.
+Oszacowania te stanowią górne ograniczenie faktycznej entropii strumienia
+- każda pamięć źródła może je tylko obniżyć - i dlatego wymagają
+uzupełnienia analizą korelacji.
+
+\section{Analiza zależności czasowych: autokorelacja}
+
+Do wykrywania pamięci źródła służy funkcja autokorelacji. Dla ciągu bitów
+o wartościach $\{0,1\}$ i średniej $\hat{p}$ definiuje się znormalizowany
+współczynnik autokorelacji dla opóźnienia (przesunięcia) $\tau$:
+%
+\begin{equation}
+  r(\tau) = \frac{\displaystyle\sum_{i=1}^{N-\tau}(b_i - \hat{p})(b_{i+\tau} - \hat{p})}
+                 {\displaystyle\sum_{i=1}^{N}(b_i - \hat{p})^2},
+  \qquad \tau = 1,2,\dots,\tau_{\max}.
+  \label{eq:autokorelacja}
+\end{equation}
+%
+Dla źródła i.i.d. i dużego $N$ estymator $r(\tau)$ ma rozkład w przybliżeniu
+normalny o zerowej średniej i odchyleniu standardowym $1/\sqrt{N}$, skąd
+przedział ufności na poziomie $1-\alpha$ ma postać
+%
+\begin{equation}
+  |r(\tau)| \le \frac{z_{1-\alpha/2}}{\sqrt{N}} ,
+  \label{eq:ci-autokorelacja}
+\end{equation}
+%
+co dla $\alpha = 0{,}05$ daje granicę $\approx 1{,}96/\sqrt{N}$. Wartości
+przekraczające ten próg wskazują na obecność zależności o danym opóźnieniu.
+
+Interpretacja przebiegu $r(\tau)$ pozwala rozróżnić kilka typów defektu
+źródła fizycznego:
+
+\begin{itemize}
+  \item \textbf{pojedynczy pik przy $\tau = 1$} - pamięć krótkozasięgowa,
+        typowa dla zbyt szybkiego próbkowania względem czasu relaksacji
+        źródła; kolejne próbki nie są od siebie niezależne;
+  \item \textbf{składowa periodyczna} $r(\tau) \sim \cos(2\pi\tau/T)$ -
+        wskazuje na sprzężenie z sygnałem okresowym (zegar, zasilanie,
+        zakłócenie zewnętrzne) i jest najpoważniejszym defektem, gdyż
+        oznacza deterministyczny wkład do strumienia;
+  \item \textbf{wykładniczy zanik} $r(\tau) \sim e^{-\tau/\tau_c}$ -
+        pamięć o skończonym czasie korelacji $\tau_c$; sugeruje decymację
+        strumienia z krokiem większym niż $\tau_c$;
+  \item \textbf{brak struktury w granicach} \eqref{eq:ci-autokorelacja} -
+        brak podstaw do odrzucenia niezależności dla badanego zakresu
+        opóźnień.
+\end{itemize}
+
+Należy podkreślić, że zerowa autokorelacja nie implikuje niezależności:
+$r(\tau)$ mierzy wyłącznie zależność liniową, a wykrycie zależności
+wyższego rzędu wymaga analizy rozkładu słów wielobitowych. Przy badaniu
+$\tau_{\max}$ opóźnień jednocześnie obowiązuje przy tym korekta na
+wielokrotne testowanie omówiona w podrozdziale~\ref{sec:aparat-hipotez}.
+
+\section{Analiza słów wielobitowych i mapy dwuwymiarowe}
+
+Uogólnieniem analizy pojedynczych bitów jest badanie rozkładu słów
+$k$-bitowych. Grupując strumień w słowa $w_j \in \{0,\dots,2^k-1\}$ i
+zestawiając liczby ich wystąpień $O_m$ z wartością oczekiwaną
+$E = M/2^k$ (gdzie $M$ jest liczbą słów), otrzymuje się statystykę
+%
+\begin{equation}
+  \chi^2 = \sum_{m=0}^{2^k-1} \frac{(O_m - E)^2}{E}
+  \;\sim\; \chi^2_{2^k-1},
+  \label{eq:chi2-slowa}
+\end{equation}
+%
+która pozwala testować jednostajność rozkładu słów (test serii, w wariantach
+literaturowych określany też jako \emph{serial test} lub \emph{poker test}).
+Bezpośrednie oszacowanie entropii z częstości słów, $\hat{H} = -\sum_m
+\hat{q}_m \log_2 \hat{q}_m$, jest obciążone w dół i wymaga korekty
+Millera--Madowa rzędu $(2^k-1)/(2M\ln 2)$; z tego względu wiarygodna
+estymacja wymaga $M \gg 2^k$, co ogranicza praktycznie osiągalne $k$.
+
+Uzupełnieniem analizy liczbowej jest reprezentacja graficzna w postaci
+\textbf{mapy dwuwymiarowej}, konstruowanej przez naniesienie na płaszczyznę
+par kolejnych słów
+%
+\begin{equation}
+  \big(w_j,\, w_{j+d}\big), \qquad j = 1,\dots,M-d,
+  \label{eq:mapa2d}
+\end{equation}
+%
+gdzie $d$ jest przyjętym opóźnieniem. Metoda ta jest odpowiednikiem
+rekonstrukcji przestrzeni fazowej metodą opóźnień czasowych, stosowanej
+w analizie układów dynamicznych: dla źródła idealnego punkty wypełniają
+kwadrat $[0,2^k)^2$ równomiernie, a dla źródła zawierającego składową
+deterministyczną - układają się w struktury geometryczne. Wartość
+diagnostyczna map wynika stąd, że ujawniają one zależności
+\emph{nieliniowe}, wobec których funkcja autokorelacji pozostaje ślepa,
+a ich typowe wzorce mają bezpośrednią interpretację układową:
+
+\begin{itemize}
+  \item \textbf{linie ukośne} - zależność funkcyjna między słowami
+        odległymi o $d$, czyli deterministyczne odwzorowanie stanu;
+  \item \textbf{prążki poziome lub pionowe} - niejednorodność rozkładu
+        brzegowego słów (uprzywilejowane wartości), wykrywalna również
+        testem \eqref{eq:chi2-slowa};
+  \item \textbf{zagęszczenie wokół przekątnej} - dodatnia korelacja
+        kolejnych słów, odpowiadająca pamięci źródła;
+  \item \textbf{regularna krata} - okresowość strumienia, wskazująca na
+        skończony i krótki cykl efektywny.
+\end{itemize}
+
+Ocena wzrokowa mapy stanowi wstępny etap diagnostyki; sformalizowaniem tej
+samej informacji jest omawiany wyżej test $\chi^2$ dla par słów, o liczbie
+stopni swobody $2^{2k}-1$.
+
+\section{Kondycjonowanie strumienia i metoda von Neumanna}
+
+Ponieważ surowy strumień ze źródła fizycznego jest z reguły obciążony,
+stosuje się etap kondycjonowania (\emph{wybielania}), którego zadaniem jest
+usunięcie odstępstw od rozkładu jednostajnego \emph{bez} zwiększania
+faktycznej ilości niesionej entropii. Klasycznym algorytmem tego typu jest
+korektor von Neumanna \cite{vonneumann1951}: bity grupuje się w rozłączne
+pary $(b_{2i}, b_{2i+1})$ i stosuje odwzorowanie
+%
+\begin{equation}
+  (0,1) \mapsto 0, \qquad (1,0) \mapsto 1, \qquad
+  (0,0),\,(1,1) \mapsto \text{odrzucenie pary}.
+  \label{eq:von-neumann}
+\end{equation}
+%
+Dla źródła Bernoulliego o obciążeniu $p$ i niezależnych bitach wynik jest
+ciągiem idealnie symetrycznym niezależnie od wartości $p$, co wynika z
+równości $P(0,1) = P(1,0) = p(1-p)$. Prawdopodobieństwo zachowania pary
+wynosi $2p(1-p)$, więc wydajność metody, mierzona liczbą bitów wyjściowych
+na bit wejściowy, jest równa
+%
+\begin{equation}
+  \eta(p) = p(1-p) \;\le\; \tfrac{1}{4},
+  \label{eq:wydajnosc-vn}
+\end{equation}
+%
+z maksimum $0{,}25$ osiąganym dla $p = 0{,}5$. Nawet dla źródła idealnego
+odrzucane są zatem trzy czwarte bitów, a wydajność maleje wraz ze wzrostem
+obciążenia. Warto porównać tę wartość z granicą teoretyczną: entropia
+źródła wynosi $H_1(p)$ bitów na bit, więc metoda von Neumanna wykorzystuje
+jedynie ułamek $\eta(p)/H_1(p)$ dostępnej entropii (dla $p = 0{,}5$ -
+25\%), podczas gdy ekstraktory optymalne zbliżają się do granicy $H_1(p)$.
+
+Ograniczenia metody są istotne dla interpretacji wyników pomiarowych.
+Poprawność dowodu opiera się na założeniu niezależności bitów w parze:
+przy obecności autokorelacji symetria $P(0,1) = P(1,0)$ przestaje zachodzić
+i wybielanie nie usuwa obciążenia w pełni. Metoda nie usuwa też korelacji
+- eliminuje odstępstwo rozkładu brzegowego, natomiast struktura zależności
+czasowych może zostać zachowana, a przez nieregularne odrzucanie par nawet
+przekształcona w sposób trudny do przewidzenia. Z tego względu porównanie
+autokorelacji i rozkładu słów \emph{przed} i \emph{po} wybielaniu jest
+osobnym elementem oceny generatora, a nie formalnością: poprawa obciążenia
+przy niezmienionej strukturze korelacyjnej wskazuje, że wybielanie
+maskuje objaw, nie usuwając przyczyny.
+
+W zastosowaniach wymagających odporności na korelacje długozasięgowe
+stosuje się w zamian ekstraktory kryptograficzne (uniwersalne funkcje
+haszujące, konstrukcje zgodne z SP 800-90C), które przy poprawnie
+oszacowanej min-entropii wejścia gwarantują nieodróżnialność wyjścia od
+ciągu idealnego z zadanym zapasem bezpieczeństwa.
+
+\section{Standaryzowane pakiety testów}
+
+Opisane wyżej testy stanowią rdzeń analizy własnej, prowadzonej z pełną
+kontrolą nad parametrami pomiaru. Ich uzupełnieniem są standaryzowane
+pakiety, pozwalające na porównanie wyników z literaturą:
+
+\begin{itemize}
+  \item \textbf{NIST SP 800-22} \cite{rukhin2010sp80022} - 15 testów
+        obejmujących częstość, serie, rangę macierzy, transformatę Fouriera,
+        złożoność liniową, entropię przybliżoną i inne; przeznaczony do
+        oceny ciągów rzędu $10^6$ bitów i wyżej, z analizą rozkładu
+        wartości $p$ dla wielu podciągów;
+  \item \textbf{NIST SP 800-90B} \cite{turan2018sp80090b} - nie pakiet
+        testów zgodności, lecz zestaw estymatorów min-entropii (ścieżka
+        i.i.d. oraz ścieżka non-i.i.d., w której przyjmuje się minimum
+        z dziesięciu estymatorów, m.in. kolizyjnego, kompresyjnego,
+        markowskiego i opartych na predykcji);
+  \item \textbf{Dieharder} oraz \textbf{TestU01} \cite{lecuyer2007testu01}
+        --- rozbudowane baterie testów (w tym \emph{BigCrush}) o istotnie
+        wyższej mocy, wymagające jednak strumieni rzędu $10^{11}$ bitów,
+        co dla generatorów sprzętowych o umiarkowanej przepustowości bywa
+        praktycznie nieosiągalne;
+  \item \textbf{AIS-31} \cite{killmann2011ais31} - procedury T0-T8
+        stosowane w certyfikacji europejskiej, obejmujące zarówno strumień
+        surowy, jak i wyjściowy, wraz z wymaganiem istnienia
+        stochastycznego modelu źródła.
+\end{itemize}
+
+Podział ról między analizą własną a pakietami standaryzowanymi jest zatem
+następujący: testy dedykowane (obciążenie, autokorelacja, mapy 2D)
+lokalizują \emph{przyczynę} defektu i pozwalają powiązać ją z parametrami
+układu, natomiast pakiety standaryzowane orzekają o \emph{globalnej}
+zgodności strumienia z modelem idealnym. Żadna z tych metod nie zastępuje
+oszacowania min-entropii, która - zgodnie z porządkiem
+\eqref{eq:porzadek} - pozostaje ostateczną miarą siły kryptograficznej
+generatora.

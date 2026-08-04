@@ -1,3 +1,83 @@
+@article{kolmogorov1965three,
+  author  = {Kolmogorov, Andrei N.},
+  title   = {Three Approaches to the Quantitative Definition of Information},
+  journal = {Problems of Information Transmission},
+  volume  = {1},
+  number  = {1},
+  pages   = {1--7},
+  year    = {1965}
+}
+
+@inproceedings{renyi1961,
+  author    = {R{\'e}nyi, Alfr{\'e}d},
+  title     = {On Measures of Entropy and Information},
+  booktitle = {Proceedings of the Fourth Berkeley Symposium on Mathematical
+               Statistics and Probability},
+  volume    = {1},
+  pages     = {547--561},
+  publisher = {University of California Press},
+  year      = {1961}
+}
+ 
+@book{cover2006elements,
+  author    = {Cover, Thomas M. and Thomas, Joy A.},
+  title     = {Elements of Information Theory},
+  edition   = {2},
+  publisher = {Wiley-Interscience},
+  year      = {2006},
+  isbn      = {978-0-471-24195-9}
+}
+
+@inproceedings{heninger2012mining,
+  author    = {Heninger, Nadia and Durumeric, Zakir and Wustrow, Eric
+               and Halderman, J. Alex},
+  title     = {Mining Your Ps and Qs: Detection of Widespread Weak Keys
+               in Network Devices},
+  booktitle = {Proceedings of the 21st USENIX Security Symposium},
+  pages     = {205--220},
+  publisher = {USENIX Association},
+  year      = {2012}
+}
+ 
+@techreport{nist_sp80090c,
+  author      = {Barker, Elaine and Kelsey, John and McKay, Kerry
+                 and Roginsky, Allen and Turan, Meltem S{\"o}nmez},
+  title       = {Recommendation for Random Bit Generator (RBG) Constructions},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-90C},
+  year        = {2024},
+  note        = {WERYFIKACJA: sprawdzi{\'c} aktualny status dokumentu
+                 (draft / wersja finalna) i rok publikacji na csrc.nist.gov}
+}
+
+@manual{killmann2011ais31,
+  author       = {Killmann, Wolfgang and Schindler, Werner},
+  title        = {A Proposal for: Functionality Classes for Random Number
+                  Generators, Version 2.0},
+  organization = {Bundesamt f{\"u}r Sicherheit in der Informationstechnik (BSI)},
+  address      = {Bonn, Germany},
+  year         = {2011},
+  note         = {AIS 20 / AIS 31; definiuje klasy DRG.1--DRG.4 i PTG.1--PTG.3
+                  oraz procedury testowe A (T0--T5) i B (T6--T8)},
+  howpublished = {\url{https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Zertifizierung/Interpretationen/AIS_31_Functionality_classes_for_random_number_generators_e.pdf}}
+}
+
+@techreport{turan2018sp80090b,
+  author      = {Turan, Meltem S{\"o}nmez and Barker, Elaine and Kelsey, John
+                 and McKay, Kerry A. and Baish, Mary L. and Boyle, Mike},
+  title       = {Recommendation for the Entropy Sources Used for Random Bit Generation},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-90B},
+  year        = {2018},
+  month       = jan,
+  doi         = {10.6028/NIST.SP.800-90B},
+  note        = {Definiuje min-entropi{\k{e}} jako podstawow{\k{a}} miar{\k{e}}
+                 oraz zestaw dziesi{\k{e}}ciu estymator{\'o}w dla {\'z}r{\'o}de{\l}
+                 non-IID}
+}
+
 @techreport{sunar2006provably,
   author      = {Sunar, Berk and Martin, William J. and Stinson, Douglas R.},
   title       = {A Provably Secure True Random Number Generator with Built-in Tolerance to Active Attacks},
@@ -66,4 +146,254 @@
   year         = {2023},
   note         = {Section: KEEP Attribute},
   howpublished = {\url{https://docs.amd.com/r/en-US/ug901-vivado-synthesis/KEEP}}
+}
+
+% =====================================================================
+%  bibliografia.bib
+%  Bibliografia do rozdziału "Metody analizy statystycznej
+%  strumienia bitów losowych"
+%
+%  Kodowanie: UTF-8
+%  Kompatybilność: BibTeX (plain/unsrt/abbrv) oraz BibLaTeX
+%  Wielkie litery w tytułach zabezpieczone nawiasami klamrowymi,
+%  aby styl bibliograficzny ich nie zmieniał na małe.
+% =====================================================================
+
+
+% ---------------------------------------------------------------------
+%  MIARY ENTROPII I PODSTAWY TEORII INFORMACJI
+% ---------------------------------------------------------------------
+
+@inproceedings{renyi1961,
+  author    = {R{\'e}nyi, Alfr{\'e}d},
+  title     = {On Measures of Entropy and Information},
+  booktitle = {Proceedings of the Fourth Berkeley Symposium on Mathematical
+               Statistics and Probability, Volume 1: Contributions to the
+               Theory of Statistics},
+  editor    = {Neyman, Jerzy},
+  pages     = {547--561},
+  publisher = {University of California Press},
+  address   = {Berkeley, CA},
+  year      = {1961}
+}
+
+@book{cover2006elements,
+  author    = {Cover, Thomas M. and Thomas, Joy A.},
+  title     = {Elements of Information Theory},
+  edition   = {2},
+  publisher = {Wiley-Interscience},
+  address   = {Hoboken, NJ},
+  year      = {2006},
+  isbn      = {978-0-471-24195-9}
+}
+
+
+% ---------------------------------------------------------------------
+%  POJĘCIE CIĄGU LOSOWEGO
+% ---------------------------------------------------------------------
+
+@article{kolmogorov1965three,
+  author  = {Kolmogorov, Andrei N.},
+  title   = {Three Approaches to the Quantitative Definition of Information},
+  journal = {Problems of Information Transmission},
+  volume  = {1},
+  number  = {1},
+  pages   = {1--7},
+  year    = {1965}
+}
+
+
+% ---------------------------------------------------------------------
+%  KONDYCJONOWANIE STRUMIENIA
+% ---------------------------------------------------------------------
+
+@incollection{vonneumann1951,
+  author    = {von Neumann, John},
+  title     = {Various Techniques Used in Connection with Random Digits},
+  booktitle = {Monte Carlo Method},
+  editor    = {Householder, Alston S. and Forsythe, George E.
+               and Germond, Herbert H.},
+  series    = {National Bureau of Standards Applied Mathematics Series},
+  volume    = {12},
+  pages     = {36--38},
+  publisher = {U.S. Government Printing Office},
+  address   = {Washington, DC},
+  year      = {1951}
+}
+
+
+% ---------------------------------------------------------------------
+%  NORMY I PAKIETY TESTÓW
+% ---------------------------------------------------------------------
+
+@techreport{turan2018sp80090b,
+  author      = {S{\"o}nmez Turan, Meltem and Barker, Elaine and Kelsey, John
+                 and McKay, Kerry A. and Baish, Mary L. and Boyle, Mike},
+  title       = {Recommendation for the Entropy Sources Used for
+                 Random Bit Generation},
+  institution = {National Institute of Standards and Technology},
+  address     = {Gaithersburg, MD},
+  type        = {NIST Special Publication},
+  number      = {800-90B},
+  month       = jan,
+  year        = {2018},
+  pages       = {84},
+  doi         = {10.6028/NIST.SP.800-90B}
+}
+
+@techreport{rukhin2010sp80022,
+  author      = {Rukhin, Andrew and Soto, Juan and Nechvatal, James
+                 and Smid, Miles and Barker, Elaine and Leigh, Stefan
+                 and Levenson, Mark and Vangel, Mark and Banks, David
+                 and Heckert, Alan and Dray, James and Vo, San},
+  title       = {A Statistical Test Suite for Random and Pseudorandom
+                 Number Generators for Cryptographic Applications},
+  institution = {National Institute of Standards and Technology},
+  address     = {Gaithersburg, MD},
+  type        = {NIST Special Publication},
+  number      = {800-22 Rev. 1a},
+  month       = apr,
+  year        = {2010},
+  doi         = {10.6028/NIST.SP.800-22r1a}
+}
+
+@techreport{killmann2011ais31,
+  author      = {Killmann, Wolfgang and Schindler, Werner},
+  title       = {A Proposal for: Functionality Classes for
+                 Random Number Generators, Version 2.0},
+  institution = {Bundesamt f{\"u}r Sicherheit in der Informationstechnik (BSI)},
+  address     = {Bonn},
+  type        = {AIS 20 / AIS 31, Mathematical-Technical Reference},
+  month       = sep,
+  year        = {2011},
+  note        = {Wersja 2.0 z 18 września 2011}
+}
+
+@article{lecuyer2007testu01,
+  author  = {L'Ecuyer, Pierre and Simard, Richard},
+  title   = {{TestU01}: A {C} Library for Empirical Testing of
+             Random Number Generators},
+  journal = {ACM Transactions on Mathematical Software},
+  volume  = {33},
+  number  = {4},
+  pages   = {22:1--22:40},
+  month   = aug,
+  year    = {2007},
+  doi     = {10.1145/1268776.1268777}
+}
+
+
+% =====================================================================
+%  POZYCJE OPCJONALNE
+%  Nie są cytowane w obecnej wersji rozdziału, ale odpowiadają
+%  nazwiskom i pojęciom wymienionym w tekście. Można je wykorzystać,
+%  jeśli chce się je opatrzyć odsyłaczem bibliograficznym.
+% =====================================================================
+
+% --- do akapitu o podejściu częstościowym (von Mises, Ville) ---
+
+@article{vonmises1919,
+  author  = {von Mises, Richard},
+  title   = {Grundlagen der Wahrscheinlichkeitsrechnung},
+  journal = {Mathematische Zeitschrift},
+  volume  = {5},
+  number  = {1--2},
+  pages   = {52--99},
+  year    = {1919},
+  doi     = {10.1007/BF01203155}
+}
+
+@book{ville1939,
+  author    = {Ville, Jean},
+  title     = {{\'E}tude critique de la notion de collectif},
+  series    = {Monographies des Probabilit{\'e}s},
+  volume    = {3},
+  publisher = {Gauthier-Villars},
+  address   = {Paris},
+  year      = {1939}
+}
+
+% --- do wzmianki o korekcie Millera--Madowa ---
+
+@incollection{miller1955,
+  author    = {Miller, George A.},
+  title     = {Note on the Bias of Information Estimates},
+  booktitle = {Information Theory in Psychology: Problems and Methods},
+  editor    = {Quastler, Henry},
+  pages     = {95--100},
+  publisher = {Free Press},
+  address   = {Glencoe, IL},
+  year      = {1955}
+}
+
+% --- do wzmianki o ekstraktorach i konstrukcjach SP 800-90A/C ---
+
+@techreport{barker2015sp80090a,
+  author      = {Barker, Elaine and Kelsey, John},
+  title       = {Recommendation for Random Number Generation Using
+                 Deterministic Random Bit Generators},
+  institution = {National Institute of Standards and Technology},
+  address     = {Gaithersburg, MD},
+  type        = {NIST Special Publication},
+  number      = {800-90A Rev. 1},
+  month       = jun,
+  year        = {2015},
+  doi         = {10.6028/NIST.SP.800-90Ar1}
+}
+
+@techreport{barker2022sp80090c,
+  author      = {Barker, Elaine and Kelsey, John and McKay, Kerry A.
+                 and Roginsky, Allen and S{\"o}nmez Turan, Meltem},
+  title       = {Recommendation for Random Bit Generator ({RBG})
+                 Constructions},
+  institution = {National Institute of Standards and Technology},
+  address     = {Gaithersburg, MD},
+  type        = {NIST Special Publication (Third Public Draft)},
+  number      = {800-90C},
+  month       = sep,
+  year        = {2022},
+  doi         = {10.6028/NIST.SP.800-90C.3pd}
+}
+
+@incollection{vonneumann1951,
+  author    = {von Neumann, John},
+  title     = {Various Techniques Used in Connection with Random Digits},
+  booktitle = {Monte Carlo Method},
+  editor    = {Householder, Alston S. and Forsythe, George E.
+               and Germond, Herbert H.},
+  series    = {National Bureau of Standards Applied Mathematics Series},
+  volume    = {12},
+  pages     = {36--38},
+  publisher = {U.S. Government Printing Office},
+  address   = {Washington, DC},
+  year      = {1951}
+}
+ 
+@techreport{rukhin2010sp80022,
+  author      = {Rukhin, Andrew and Soto, Juan and Nechvatal, James
+                 and Smid, Miles and Barker, Elaine and Leigh, Stefan
+                 and Levenson, Mark and Vangel, Mark and Banks, David
+                 and Heckert, Alan and Dray, James and Vo, San},
+  title       = {A Statistical Test Suite for Random and Pseudorandom
+                 Number Generators for Cryptographic Applications},
+  institution = {National Institute of Standards and Technology},
+  address     = {Gaithersburg, MD},
+  type        = {NIST Special Publication},
+  number      = {800-22 Rev. 1a},
+  month       = apr,
+  year        = {2010},
+  doi         = {10.6028/NIST.SP.800-22r1a}
+}
+ 
+@article{lecuyer2007testu01,
+  author  = {L'Ecuyer, Pierre and Simard, Richard},
+  title   = {{TestU01}: A {C} Library for Empirical Testing of
+             Random Number Generators},
+  journal = {ACM Transactions on Mathematical Software},
+  volume  = {33},
+  number  = {4},
+  pages   = {22:1--22:40},
+  month   = aug,
+  year    = {2007},
+  doi     = {10.1145/1268776.1268777}
 }

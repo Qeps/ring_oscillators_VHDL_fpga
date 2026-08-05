@@ -37,7 +37,7 @@ from pathlib import Path
 import serial
 
 # User-configurable parameters
-UART_PORT = "COM11"
+UART_PORT = "COM7"
 UART_BAUD = 9600
 UART_BYTESIZE = serial.EIGHTBITS
 UART_PARITY = serial.PARITY_NONE
@@ -50,6 +50,7 @@ READ_CHUNK_SIZE = 4096
 UART_BIT_ORDER = "msb"  # "msb" or "lsb"
 CAPTURE_BITS = 10485760
 CAPTURE_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "captured_bits.txt"
+# ANALYSIS_INPUT_PATH = Path(__file__).resolve().parent.parent / "captured_bits.txt"
 
 MAX_LAG = 15
 MAP2D_WORD_SIZES = (4, 8)

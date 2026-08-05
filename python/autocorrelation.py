@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from user_func import bitstream_length_summary, build_output_path, load_bitstreams_from_file
-from user_param import ANALYSIS_INPUT_PATH, MAX_LAG
+from user_param import CAPTURE_OUTPUT_PATH, MAX_LAG
 
 
 def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
@@ -180,8 +180,8 @@ def analyze_bitstream(bits: np.ndarray, bitstream_idx: int, bitstream_count: int
 def main() -> None:
     validate_config()
 
-    print(f"Loading captured bitstreams from: {ANALYSIS_INPUT_PATH}")
-    bitstreams = load_bitstreams_from_file(ANALYSIS_INPUT_PATH)
+    print(f"Loading captured bitstreams from: {CAPTURE_OUTPUT_PATH}")
+    bitstreams = load_bitstreams_from_file(CAPTURE_OUTPUT_PATH)
     print(f"Loaded {bitstream_length_summary(bitstreams)}")
 
     for idx, bits in enumerate(bitstreams, start=1):

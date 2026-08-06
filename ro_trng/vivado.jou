@@ -1,0 +1,326 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Sun Jul 19 16:27:15 2026
+# Process ID         : 16560
+# Current directory  : C:/Users/gerar/workspace_vivado/ring_oscillators_VHDL_fpga/ro_trng
+# Command line       : vivado.exe -gui_launcher_event rodinguilauncherevent12844 C:\Users\gerar\workspace_vivado\ring_oscillators_VHDL_fpga\ro_trng\ro_trng.xpr
+# Log file           : C:/Users/gerar/workspace_vivado/ring_oscillators_VHDL_fpga/ro_trng/vivado.log
+# Journal file       : C:/Users/gerar/workspace_vivado/ring_oscillators_VHDL_fpga/ro_trng\vivado.jou
+# Running On         : LAPTOP-CT0JF8JO
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26200
+# Processor Detail   : Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz
+# CPU Frequency      : 2400 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 17014 MB
+# Swap memory        : 5368 MB
+# Total Virtual      : 22383 MB
+# Available Virtual  : 11906 MB
+#-----------------------------------------------------------
+start_guopopen_project C:/Users/gerar/workspace_vivado/ring_oscillators_VHDL_fpga/ro_trng/ro_trng.xpupupdate_compile_order -fileset sources_1
+report_ip_status -name ip_status 
+update_module_reference [get_ips  {top_lvl_design_entropy_mixer_0_1 top_lvl_design_uart_tx_0_0}]
+launch_runs synth_1 -jobs 8
+wait_on_run synth_1
+launch_runs impl_1 -jobs 8
+wait_on_run impl_1
+open_run impl_1
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_13 SLICE_X12Y11/B6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_13 SLICE_X12Y10/B6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_1 SLICE_X11Y18/A6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_2 SLICE_X11Y18/B6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_3 SLICE_X11Y18/C6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_7 SLICE_X8Y18/C5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_7 SLICE_X8Y18/A5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/ro_out_INST_0 SLICE_X8Y20/A6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/ro_out_INST_0 SLICE_X8Y24/A6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_7 SLICE_X8Y24/A5LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_3] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_1 SLICE_X9Y24/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_2 SLICE_X9Y24/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_3 SLICE_X9Y24/C6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_4] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_6 SLICE_X8Y24/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_5 SLICE_X8Y24/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_4 SLICE_X8Y24/B6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_1 SLICE_X9Y17/C6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_2 SLICE_X9Y17/D6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_3 SLICE_X10Y17/A6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_3] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/ro_out_INST_0 SLICE_X8Y64/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_9 SLICE_X8Y64/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_6 SLICE_X8Y64/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_7 SLICE_X8Y64/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_8 SLICE_X8Y64/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_2 SLICE_X9Y64/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_1 SLICE_X9Y64/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_5 SLICE_X9Y64/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_4 SLICE_X9Y64/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro1/w_inferred_i_3 SLICE_X10Y64/A6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_3] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_5 SLICE_X16Y24/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_4 SLICE_X16Y24/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_6 SLICE_X16Y24/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_3 SLICE_X16Y24/D6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11 SLICE_X17Y24/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 SLICE_X17Y24/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 SLICE_X17Y24/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 SLICE_X17Y24/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 SLICE_X17Y24/B6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_8 SLICE_X17Y24/C5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 SLICE_X21Y40/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 SLICE_X21Y40/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 SLICE_X21Y40/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11 SLICE_X21Y40/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 SLICE_X21Y40/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 SLICE_X17Y24/D5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7 SLICE_X17Y24/B5LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_8 SLICE_X18Y24/C5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 SLICE_X18Y24/B5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7 SLICE_X18Y24/D5LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 SLICE_X17Y24/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 SLICE_X17Y24/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 SLICE_X17Y24/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11 SLICE_X17Y24/A6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7 SLICE_X17Y24/D5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_8 SLICE_X17Y24/C5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 SLICE_X17Y24/B5LUT
+endgroup
+save_constraints
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 SLICE_X20Y32/B5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 SLICE_X18Y24/B5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 SLICE_X17Y24/A5LUT
+endgroup
+save_constraints -force
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_11] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_1 SLICE_X19Y16/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_10 SLICE_X19Y16/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_11 SLICE_X19Y16/C6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_3 top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_2] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_12 SLICE_X18Y16/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_3 SLICE_X18Y16/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_2 SLICE_X18Y16/C6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_13] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/ro_out_INST_0 SLICE_X18Y16/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_13 SLICE_X18Y16/A6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro3/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_13 top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_4] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_5 SLICE_X17Y16/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/ro_out_INST_0 SLICE_X22Y16/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_13 SLICE_X22Y16/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_4 SLICE_X17Y16/A6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_9] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_6 SLICE_X16Y16/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_7 SLICE_X16Y16/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_8 SLICE_X16Y16/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_9 SLICE_X16Y16/D6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/w_inferred_i_13 SLICE_X18Y16/A6LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro3/ro_out_INST_0 SLICE_X18Y16/A5LUT
+endgroup
+startgroup
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/ro_out_INST_0 SLICE_X18Y8/D5LUT
+endgroup
+undo
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro4/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_3 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_11 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_12 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_13 top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_14] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_15 SLICE_X16Y0/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/ro_out_INST_0 SLICE_X16Y0/B5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_1 SLICE_X19Y0/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_2 SLICE_X19Y0/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_3 SLICE_X19Y0/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_4 SLICE_X19Y0/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_5 SLICE_X18Y0/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_6 SLICE_X18Y0/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_7 SLICE_X18Y0/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_8 SLICE_X18Y0/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_9 SLICE_X16Y0/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_10 SLICE_X17Y0/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_11 SLICE_X17Y0/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_12 SLICE_X17Y0/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_13 SLICE_X16Y0/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro4/w_inferred_i_14 SLICE_X16Y0/D6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_3 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_11 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_13 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_12 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_14 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_15 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_16 top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_17] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/ro_out_INST_0 SLICE_X18Y48/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_1 SLICE_X19Y48/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_2 SLICE_X19Y48/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_3 SLICE_X19Y48/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_4 SLICE_X18Y48/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_5 SLICE_X18Y48/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_6 SLICE_X18Y48/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_7 SLICE_X17Y47/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_8 SLICE_X16Y47/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_9 SLICE_X16Y47/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_10 SLICE_X21Y48/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_11 SLICE_X21Y48/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_13 SLICE_X20Y48/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_12 SLICE_X21Y48/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_14 SLICE_X20Y48/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_15 SLICE_X20Y48/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_16 SLICE_X20Y48/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro5/w_inferred_i_17 SLICE_X18Y48/A6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_3 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_11 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_12 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_13 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_14 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_15 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_16 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_17 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_18 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_19 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_20 top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_21] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/ro_out_INST_0 SLICE_X4Y99/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_1 SLICE_X5Y99/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_2 SLICE_X3Y95/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_3 SLICE_X3Y95/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_4 SLICE_X2Y95/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_5 SLICE_X2Y95/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_6 SLICE_X2Y95/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_7 SLICE_X2Y95/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_8 SLICE_X0Y95/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_9 SLICE_X0Y95/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_10 SLICE_X1Y95/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_11 SLICE_X1Y95/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_12 SLICE_X1Y95/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_13 SLICE_X1Y95/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_14 SLICE_X0Y95/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_15 SLICE_X0Y95/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_16 SLICE_X5Y99/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_17 SLICE_X5Y99/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_18 SLICE_X4Y99/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_19 SLICE_X4Y99/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_20 SLICE_X4Y99/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro6/w_inferred_i_21 SLICE_X4Y99/D6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro7/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_3 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_11 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_12 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_13 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_14 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_15 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_17 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_16 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_18 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_19 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_20 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_21 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_22 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_23 top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_24] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_25 SLICE_X20Y86/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/ro_out_INST_0 SLICE_X20Y86/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_1 SLICE_X21Y86/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_3 SLICE_X20Y86/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_2 SLICE_X21Y86/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_4 SLICE_X21Y87/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_6 SLICE_X20Y87/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_5 SLICE_X21Y87/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_7 SLICE_X20Y87/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_8 SLICE_X20Y87/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_9 SLICE_X20Y87/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_10 SLICE_X21Y87/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_11 SLICE_X28Y87/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_12 SLICE_X28Y87/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_13 SLICE_X28Y87/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_14 SLICE_X28Y87/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_15 SLICE_X29Y87/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_17 SLICE_X29Y87/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_16 SLICE_X29Y87/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_18 SLICE_X29Y87/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_19 SLICE_X29Y87/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_20 SLICE_X29Y87/B5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_21 SLICE_X29Y87/C5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_22 SLICE_X29Y87/D5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_23 SLICE_X21Y87/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro7/w_inferred_i_24 SLICE_X20Y86/B6LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro0/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_3 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_7] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_2 SLICE_X3Y37/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/ro_out_INST_0 SLICE_X2Y37/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_1 SLICE_X3Y37/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_3 SLICE_X3Y37/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_4 SLICE_X2Y37/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_6 SLICE_X2Y37/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_5 SLICE_X2Y37/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro0/w_inferred_i_7 SLICE_X2Y37/A5LUT
+endgroup
+startgroup
+unplace_cell  [get_cells [list  top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_4 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_5 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_6 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_8 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11] -filter {((is_primitive==true && primitive_level!="INTERNAL")  && (loc!=""))}]
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_3 SLICE_X33Y30/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/ro_out_INST_0 SLICE_X34Y30/A5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_1 SLICE_X34Y30/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_2 SLICE_X34Y30/D6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_4 SLICE_X33Y30/B6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_5 SLICE_X33Y30/A6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_6 SLICE_X33Y30/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_7 SLICE_X34Y30/D5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_8 SLICE_X34Y30/C5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_9 SLICE_X34Y30/B5LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_10 SLICE_X34Y30/C6LUT
+place_cell top_lvl_design_i/ro_bank_0/U0/ro2/w_inferred_i_11 SLICE_X34Y30/A6LUT
+endgroup
+save_constraints -force
+reset_run synth_1
+launch_runs synth_1 -jobs 8
+wait_on_run synth_1
+close_design
+report_ip_status -name ip_status 
+launch_runs impl_1 -jobs 8
+wait_on_run impl_1
+open_run impl_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1

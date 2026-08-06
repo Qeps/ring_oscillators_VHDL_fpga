@@ -8,11 +8,15 @@
     "gen_directory": "../../../../../../ro_trng.gen/sources_1/bd/top_lvl_design/ip/top_lvl_design_ro_bank_0_0",
     "parameters": {
       "component_parameters": {
+        "OUT_WIDTH": [ { "value": "8", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Component_Name": [ { "value": "top_lvl_design_ro_bank_0_0", "resolve_type": "user", "usage": "all" } ]
+      },
+      "model_parameters": {
+        "OUT_WIDTH": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ]
       },
       "project_parameters": {
         "ARCHITECTURE": [ { "value": "spartan7", "resolve_type": "generated", "usage": "all" } ],
-        "BASE_BOARD_PART": [ { "value": "digilentinc.com:arty-s7-25:part0:1.1", "resolve_type": "generated", "usage": "all" } ],
+        "BASE_BOARD_PART": [ { "value": "", "resolve_type": "generated", "usage": "all" } ],
         "BOARD_CONNECTIONS": [ { "value": "", "resolve_type": "generated", "usage": "all" } ],
         "DEVICE": [ { "value": "xc7s25", "resolve_type": "generated", "usage": "all" } ],
         "PACKAGE": [ { "value": "csga324", "resolve_type": "generated", "usage": "all" } ],
@@ -37,9 +41,9 @@
     "boundary": {
       "ports": {
         "enable": [ { "direction": "in" } ],
-        "ro_vec": [ { "direction": "out", "size_left": "7", "size_right": "0" } ]
+        "ro_xor_vector": [ { "direction": "out", "size_left": "7", "size_right": "0" } ]
       }
     }
   },
-  "checksum": "8ebc8d88"
+  "checksum": "11da7736"
 }

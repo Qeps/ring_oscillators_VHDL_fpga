@@ -65,7 +65,7 @@
           "enable": {
             "direction": "I"
           },
-          "ro_vec": {
+          "ro_xor_vector": {
             "direction": "O",
             "left": "7",
             "right": "0"
@@ -234,9 +234,9 @@
       "CLK100MHZ_1": {
         "ports": [
           "CLK100MHZ",
-          "uart_tx_0/clk",
           "ro_sampler_0/clk",
-          "entropy_mixer_0/clk"
+          "entropy_mixer_0/clk",
+          "uart_tx_0/clk"
         ]
       },
       "enable_dout": {
@@ -259,7 +259,7 @@
       },
       "ro_bank_0_ro_vec": {
         "ports": [
-          "ro_bank_0/ro_vec",
+          "ro_bank_0/ro_xor_vector",
           "ro_sampler_0/ro_vec"
         ]
       },

@@ -1,4 +1,73 @@
 \chapter{Podsumowanie}
-\label{ch:podsumowanie}
 
-Podsumowanie
+Celem pracy było zaprojektowanie, implementacja oraz przeprowadzenie analizy statystycznej
+generatora bitów losowych opartego na oscylatorach pierścieniowych w strukturze układu
+programowalnego FPGA. Cel ten został osiągnięty, a zakres wykonanych prac objął zarówno
+warstwę sprzętową, jak i narzędzia programowe niezbędne do rejestracji i oceny
+uzyskiwanych danych.
+
+W części sprzętowej opracowano kompletny projekt w języku VHDL, obejmujący
+parametryzowany moduł oscylatora pierścieniowego, moduł ekstrakcji entropii oparty na
+detekcji zboczy w próbkowanych przebiegach oraz nadajnik interfejsu UART zrealizowany
+w postaci automatu skończonego. Poszczególne bloki połączono mechanizmem potwierdzania
+gotowości, co pozwoliło oddzielić warstwę generującą entropię od warstwy transmisyjnej
+i uzależnić tempo wystawiania danych od przepustowości interfejsu komunikacyjnego.
+Struktury oscylatorów objęto atrybutami zabezpieczającymi je przed usunięciem lub
+uproszczeniem na etapie syntezy, a ich rozmieszczenie w obrębie układu określono ręcznie
+ograniczeniami umieszczonymi w pliku ograniczeń projektu, co zapewniło powtarzalność
+implementacji pomiędzy kolejnymi przebiegami narzędzia.
+
+W części programowej przygotowano zestaw skryptów w języku Python, tworzących spójne
+środowisko badawcze. Wydzielenie modułu parametrów konfiguracyjnych, oddzielenie etapu
+akwizycji od etapów analizy oraz zapis serii pomiarowych do plików pozwoliły na
+wielokrotną analizę tych samych danych przy różnych ustawieniach, bez konieczności
+ponownego uruchamiania układu. Rozwiązanie to okazało się istotne dla wiarygodności
+badań, ponieważ umożliwiło bezpośrednie porównanie strumienia surowego z poddanym
+korekcji rozkładu w obrębie tej samej rejestracji.
+
+Zasadniczym rezultatem pracy nie jest jednak sama implementacja, lecz wnioski wynikające
+z porównania czterech konfiguracji generatora trzema niezależnymi metodami analizy
+statystycznej. Badania wykazały, że poszczególne metody prowadzą do odmiennego
+uszeregowania konfiguracji, a zabiegi projektowe poprawiające jedną właściwość strumienia
+mogą jednocześnie pogarszać inną. Rozproszenie oscylatorów w strukturze układu
+zredukowało odchylenie rozkładu bitów do poziomu naturalnych fluktuacji statystycznych,
+pogarszając jednocześnie wynik badania autokorelacji o blisko dwa rzędy wielkości.
+Praktycznym wnioskiem wynikającym z tej obserwacji jest konieczność oceny źródeł entropii
+zestawem metod badających różne aspekty strumienia, ponieważ pozytywny wynik pojedynczego
+testu, w szczególności powszechnie stosowanego testu monobitowego, nie stanowi podstawy
+do stwierdzenia poprawności generatora.
+
+Analiza pozwoliła również zlokalizować mechanizm odpowiedzialny za zasadniczą część
+wykrytych odstępstw od losowości. Wykryte zależności koncentrowały się w zakresie
+opóźnień odpowiadających liczbie kanałów wejściowych oraz długości bajtu, a ich charakter
+zmieniał się wraz z relacjami częstotliwości pomiędzy oscylatorami, nie zaś wraz
+z jakością samych źródeł szumu. Wskazuje to na warstwę serializacji, w której bity
+zapisywane są do bufora w stałej kolejności numerów kanałów, jako na miejsce powstawania
+struktury okresowej w strumieniu wyjściowym. Jest to wniosek o znaczeniu praktycznym,
+ponieważ przesuwa uwagę projektanta z optymalizacji samych oscylatorów na sposób łączenia
+danych pochodzących z wielu równoległych źródeł.
+
+Praca ma określone ograniczenia, które warto wskazać. Przejście pomiędzy dwiema
+konfiguracjami obejmowało jednoczesną zmianę dwóch parametrów, w związku z czym nie jest
+możliwe rozdzielenie ich wpływu na obserwowaną poprawę. Długość serii pomiarowej,
+wynikająca z przepustowości zastosowanego interfejsu komunikacyjnego, wyznacza granicę
+czułości obu testów ilościowych i sprawia, że mapy dwuwymiarowe dla słów ośmiobitowych
+zachowują wartość jedynie jakościową. Badania przeprowadzono ponadto w stałych warunkach
+otoczenia, bez oceny wpływu temperatury oraz napięcia zasilania na stabilność źródła
+entropii, co w przypadku generatorów sprzętowych stanowi istotny aspekt ich
+charakterystyki. Nie zastosowano również standaryzowanych pakietów testów, których
+wykorzystanie pozwoliłoby odnieść uzyskane wyniki do wymagań formalnych stawianych
+źródłom losowości.
+
+Naturalnym kierunkiem dalszych prac jest weryfikacja hipotezy dotyczącej warstwy
+serializacji przez rozdzielenie zarejestrowanego strumienia na podstrumienie
+odpowiadające poszczególnym kanałom oraz zbadanie każdego z nich osobno. Kolejnym jest
+modyfikacja samego mechanizmu łączenia bitów, na przykład przez wprowadzenie zmiennej
+kolejności zapisu kanałów do bufora, co powinno usunąć zależności okresowe u ich źródła
+bez ponoszenia kosztu przepustowości właściwego dla korekcji von Neumanna. Wartościowe
+byłoby także przeniesienie korekcji do struktury układu FPGA i umieszczenie jej
+bezpośrednio przed nadajnikiem, co pozwoliłoby uzyskać strumień o poprawionych
+właściwościach statystycznych bez przetwarzania danych po stronie komputera, oraz
+zwiększenie przepustowości interfejsu komunikacyjnego, umożliwiające rejestrację serii
+na tyle długich, by rozszerzyć zakres stosowalności zastosowanych metod na dłuższe słowa
+bitowe.

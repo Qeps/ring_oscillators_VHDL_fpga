@@ -44,19 +44,74 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \streszczeniepracy{
 
-Streszczenie
+W pracy przedstawiono projekt, implementację oraz analizę statystyczną generatora bitów
+losowych opartego na oscylatorach pierścieniowych, zrealizowanego w układzie
+programowalnym FPGA Xilinx Spartan-7 na płytce rozwojowej Arty S7-25. Źródłem entropii
+jest jitter przebiegów generowanych przez łańcuchy inwerterów o zróżnicowanej długości,
+zamknięte w pętle sprzężenia zwrotnego. Bity pozyskiwane są metodą detekcji zboczy
+w próbkowanych przebiegach, gromadzone w buforze i przekazywane do komputera interfejsem
+UART z zastosowaniem mechanizmu potwierdzania gotowości.
+
+Zasadniczą część pracy stanowi analiza wpływu decyzji projektowych na właściwości
+statystyczne uzyskiwanego strumienia. Zbadano cztery konfiguracje generatora, różniące
+się liczbą oscylatorów, sposobem ich rozmieszczenia w strukturze układu, obecnością
+operacji różnicy symetrycznej na wyjściach oraz zastosowaniem korekcji rozkładu metodą
+von  Neumanna. Dla każdej z nich zarejestrowano serię o długości $10\,485\,760$ bitów
+i poddano ją trzem niezależnym badaniom: analizie odchylenia rozkładu z wykorzystaniem
+testu monobitowego, analizie autokorelacji oraz analizie dwuwymiarowych map rozkładu słów
+wielobitowych. Narzędzia do akwizycji i analizy danych opracowano w języku Python.
+
+Wyniki wykazały, że zastosowane metody prowadzą do odmiennego uszeregowania badanych
+konfiguracji. Ręczne rozproszenie oscylatorów w strukturze układu zredukowało odchylenie
+rozkładu z  jedenastu do jednego odchylenia standardowego, jednocześnie pogarszając wynik
+autokorelacji o blisko dwa rzędy wielkości. Zwiększenie liczby oscylatorów wraz
+z łączeniem ich wyjść operacją różnicy symetrycznej ograniczyło amplitudę zależności
+czasowych blisko dwudziestoośmiokrotnie, natomiast korekcja metodą von Neumanna usunęła
+uporządkowaną strukturę współczynników autokorelacji oraz nierównomierność rozkładu
+wartości słów. Analiza wskazała warstwę serializacji strumienia jako mechanizm
+odpowiedzialny za zasadniczą część wykrytych odstępstw od losowości oraz wykazała, że
+ocena źródła entropii oparta na jednej metryce statystycznej jest niewystarczająca. 
 
 } % koniec streszczenia
 
-\slowakluczowe{A, B, C}
+\slowakluczowe{generator liczb losowych, TRNG, oscylator pierścieniowy, FPGA,
+VHDL, jitter, entropia, analiza statystyczna, korekcja von  Neumanna, UART}
 
 \thesisabstract{
 
-Abstract
+This thesis presents the design, implementation and statistical analysis of a random bit
+generator based on ring oscillators, implemented in a Xilinx Spartan-7 field-programmable
+gate array on an Arty S7-25 development board. The entropy source is the jitter of
+waveforms produced by inverter chains of varying length closed in feedback loops. Bits are
+extracted by detecting edges in the sampled waveforms, accumulated in a buffer and
+transmitted to a host computer over a UART interface using a ready-valid handshake
+mechanism.
+
+The core of the work is an analysis of how design decisions affect the statistical
+properties of the resulting bitstream. Four generator configurations were examined,
+differing in the number of oscillators, their placement within the device fabric, the
+presence of an exclusive-or operation combining their outputs, and the application of
+von Neumann distribution correction. For each configuration a series of $10\,485\,760$
+bits was recorded and subjected to three independent tests: distribution bias analysis
+using the monobit test, autocorrelation analysis, and analysis of two-dimensional delay
+maps of multi-bit words. The acquisition and analysis tools were developed in Python.
+
+The results show that the applied methods rank the configurations differently. Manual
+distribution of the oscillators across the device fabric reduced the distribution bias
+from eleven to one standard deviation while degrading the autocorrelation result by
+almost two orders of magnitude. Doubling the number of oscillators and combining their
+outputs with an exclusive-or operation reduced the amplitude of temporal dependencies
+by a factor of nearly twenty-eight, whereas von Neumann correction removed both the
+ordered structure of the autocorrelation coefficients and the non-uniformity in the
+distribution of word values. The analysis identified the bitstream serialisation layer
+as the mechanism responsible for the majority of the detected departures from randomness,
+and demonstrated that assessing an entropy source on the basis of a single statistical
+metric is insufficient.
 
 } % end of abstract
 
-\thesiskeywords{X, Y, Z}
+\thesiskeywords{random number generator, TRNG, ring oscillator, FPGA, VHDL, jitter,
+entropy, statistical analysis, von Neumann correction, UART}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tu zaczyna się dokument
@@ -85,13 +140,13 @@ Abstract
     % Additional pages - comment out if not needed
     
     % Wykaz symboli i skrótów - patrz opis w tekście przykładowym
-    \acronymslist
+    % \acronymslist
     % Spis rysunków
     \listoffigures
     % Spis tabel
     \listoftables
     % Załączniki (plik appendices.tex)
-    \easyappendices
+    % \easyappendices
 \end{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -1,4 +1,58 @@
 \chapter{Wstęp}
-\label{ch:wstep}
 
-wstep
+Liczby losowe stanowią fundament współczesnych systemów bezpieczeństwa informacji.
+Wykorzystywane są do generowania kluczy kryptograficznych, wektorów inicjujących,
+identyfikatorów sesji oraz wartości jednorazowych, a także w metodach symulacyjnych
+Monte Carlo i w algorytmach randomizowanych. W zastosowaniach kryptograficznych jakość
+źródła losowości decyduje o bezpieczeństwie całego systemu: nawet poprawnie
+zaimplementowany algorytm szyfrowania nie zapewnia ochrony, jeżeli klucz został
+wygenerowany w sposób przewidywalny. Historia kryptografii praktycznej dostarcza wielu
+przykładów podatności, których źródłem był nie sam algorytm, lecz wadliwy generator
+liczb losowych.
+
+Powszechnie stosowane generatory pseudolosowe, oparte na deterministycznych algorytmach,
+wytwarzają ciągi o bardzo dobrych właściwościach statystycznych, jednak ich stan
+wewnętrzny jest w pełni określony przez wartość początkową. Ciąg taki jest zatem
+odtwarzalny, a jego nieprzewidywalność ma charakter wyłącznie obliczeniowy. Tam, gdzie
+wymagana jest losowość o charakterze fizycznym, konieczne jest sięgnięcie do zjawisk
+niedeterministycznych zachodzących w sprzęcie. Jednym z najczęściej wykorzystywanych
+w układach cyfrowych źródeł tego rodzaju jest jitter, czyli losowa fluktuacja momentów
+przejść sygnału zegarowego, wynikająca z szumu termicznego i migotania w elementach
+półprzewodnikowych.
+
+Układy programowalne FPGA są dla implementacji generatorów sprzętowych platformą
+szczególnie atrakcyjną. Umożliwiają realizację źródła entropii wyłącznie przy użyciu
+dostępnych zasobów logicznych, bez konieczności stosowania dedykowanych elementów
+analogowych, a jednocześnie pozwalają na swobodną modyfikację architektury oraz na pełną
+kontrolę nad rozmieszczeniem struktur w obrębie układu. Najczęściej stosowanym
+rozwiązaniem tej klasy jest oscylator pierścieniowy, złożony z zamkniętego w pętlę
+łańcucha inwerterów o nieparzystej długości, którego przebieg wyjściowy podlega
+kumulującemu się jitterowi. Prostota tej struktury jest jednak pozorna: uzyskana jakość
+strumienia bitów zależy nie tylko od samego opisu logiki, lecz również od sposobu
+odwzorowania jej w zasobach układu, wzajemnego położenia oscylatorów oraz przyjętego
+mechanizmu ekstrakcji bitów z próbkowanego przebiegu.
+
+Celem niniejszej pracy jest zaprojektowanie, implementacja oraz przeprowadzenie analizy
+statystycznej generatora bitów losowych opartego na oscylatorach pierścieniowych
+w strukturze układu FPGA. Praca nie ogranicza się do wykazania działania pojedynczej
+implementacji: zasadniczym jej przedmiotem jest zbadanie, w jaki sposób wybrane decyzje
+projektowe wpływają na właściwości statystyczne uzyskiwanego strumienia. Analizie poddano
+cztery konfiguracje generatora, różniące się liczbą oscylatorów, sposobem ich
+rozmieszczenia w strukturze układu, obecnością operacji różnicy symetrycznej na wyjściach
+oraz zastosowaniem korekcji rozkładu metodą von Neumanna. Każdą z nich zbadano trzema
+niezależnymi metodami: analizą odchylenia rozkładu bitów, badaniem autokorelacji oraz
+analizą dwuwymiarowych map rozkładu słów wielobitowych.
+
+Praca składa się z sześciu rozdziałów. Rozdział drugi przedstawia podstawy teoretyczne
+analizy statystycznej ciągów losowych: miary entropii, pojęcie ciągu losowego, aparat
+testowania hipotez oraz zastosowane w dalszej części metody badawcze wraz z omówieniem
+kondycjonowania strumienia i standaryzowanych pakietów testów. Rozdział trzeci omawia
+generatory liczb losowych w technice cyfrowej, ich klasyfikację i model funkcjonalny,
+a następnie oscylator pierścieniowy jako źródło entropii, ze szczególnym uwzględnieniem
+stochastycznego modelu jitteru oraz zjawisk ograniczających entropię. Rozdział czwarty
+opisuje wykonaną implementację: wybór platformy sprzętowej, realizację poszczególnych
+modułów w języku VHDL oraz interfejs komunikacyjny służący do transmisji danych do
+komputera. Rozdział piąty, stanowiący zasadniczą część badawczą, przedstawia narzędzia
+programowe opracowane do akwizycji i analizy danych, parametry badanych konfiguracji
+oraz wyniki wszystkich przeprowadzonych badań, wraz z ich interpretacją. Rozdział szósty
+zawiera podsumowanie pracy oraz wskazanie kierunków dalszego rozwoju.

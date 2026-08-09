@@ -17,21 +17,38 @@ sprzętowej w językach HDL, przeprowadzenie syntezy logicznej,
 rozmieszczenia i trasowania zasobów, a także generację pliku konfiguracyjnego
 (bitstream) i programowanie układu docelowego.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\textwidth]{gfx/block design}
+    \caption{Block Design modułu nadrzędnego.}
+    \label{fig:blockdesign}
+\end{figure}
+
 Istotną zaletą środowiska Vivado jest pełna kontrola nad strukturą
-projektowanego układu oraz dostęp do raportów czasowych i zasobowych,
+projektowanego układu oraz dostęp do raportów zasobowych,
 co ma kluczowe znaczenie w przypadku oscylatorów pierścieniowych.
 Niewielkie różnice w opóźnieniach propagacji bramek oraz sposób
 rozmieszczenia logiki w strukturze FPGA mają bezpośredni wpływ na
-właściwości generowanego sygnału i poziom entropii.
+właściwości generowanego sygnału i poziom entropii. Dodatkowo moduł nadrzędny
+projektu, opisujący porty modułów HDL in/out bezpośrednio zmapowane do pinów fizycznego układu,
+może być generowany z blokowego schematu który pozwala na dokładne zrozumienie data flow bez przeglądania
+wielu linii kodu rys.\ref{fig:blockdesign}.
 
-Jako platformę sprzętową wybrano płytkę rozwojową Arty S7--25 z układem
+Jako platformę sprzętową wybrano płytkę rozwojową Arty S7-25 z układem
 Xilinx Spartan-7. Jest to nowoczesny układ FPGA przeznaczony do aplikacji
 o umiarkowanej złożoności, oferujący dobrą relację dostępnych zasobów
 logicznych do poboru mocy i kosztu. Rodzina Spartan-7 zapewnia stabilne
 parametry czasowe oraz powtarzalne zachowanie struktur logicznych, co
 jest istotne w kontekście implementacji generatorów liczb losowych.
 
-Dodatkowym argumentem przemawiającym za wyborem płytki Arty S7--25 jest jej
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\textwidth]{gfx/board}
+    \caption{Płytka ARTY S7-25, źródło: Digilent.com.}
+    \label{fig:DevBoard}
+\end{figure}
+
+Dodatkowym argumentem przemawiającym za wyborem płytki Arty S7-25 jest jej
 szerokie wsparcie narzędziowe oraz dostępność dokumentacji i przykładów
 projektowych. Płytka posiada standardowy interfejs JTAG do programowania
 i debugowania, co umożliwia wygodne testowanie implementacji oraz
@@ -83,15 +100,24 @@ end RTL;
 
 \end{lstlisting}
 
-Listing~\ref{lst:ring_oscillator} przedstawia prostą, parametryzowaną implementację
+Listing \ref{lst:ring_oscillator} przedstawia prostą, parametryzowaną implementację
 oscylatora pierścieniowego w języku VHDL. Zastosowane rozwiązanie odwzorowuje klasyczną 
 ideę oscylatora pierścieniowego znaną z elektroniki cyfrowej: nieparzystą liczbę inwerterów
 połączonych szeregowo w pętlę zwrotną, w której brak stabilnego stanu logicznego wymusza ciągłe przełączanie.
-Rdzeniem projektu jest wektor sygnałów \texttt{w} którego długość jest określona parametrem
-generycznym \texttt{STAGES}. Każdy element tego wektora odpowiada jednemu stopniowi inwersji.
-Pierwszy stopień otrzymuje na wejście zanegowany sygnał z ostatniego elementu łańcucha,
-co zamyka pętlę sprzężenia zwrotnego. Kolejne stopnie realizują prostą inwersję sygnału
-z poprzedniego etapu.
+
+Standardowy VHDL nie definiuje typów opisujących stany logiczne rzeczywistego układu
+cyfrowego, dlatego konieczne jest dołączenie biblioteki IEEE - w przedstawionym kodzie
+pakiet \texttt{IEEE.STD\_LOGIC\_1164} udostępnia typy \texttt{std\_logic} oraz
+\texttt{std\_logic\_vector}, użyte do opisu portów \texttt{enable}, \texttt{ro\_out}
+i sygnału wewnętrznego \texttt{w}. Pakiet ten definiuje ponadto operatory
+logiczne, w tym negację \texttt{not} wykorzystaną do realizacji łańcucha inwerterów,
+a jego standaryzacja przez IEEE zapewnia przenośność kodu między narzędziami różnych
+producentów oraz jednoznaczną interpretację opisu przez syntezator.
+Rdzeniem projektu jest wektor sygnałów \texttt{w}, którego długość jest określona
+parametrem generycznym \texttt{STAGES}. Każdy element tego wektora odpowiada jednemu
+stopniowi inwersji. Pierwszy stopień otrzymuje na wejście zanegowany sygnał
+z ostatniego elementu łańcucha, co zamyka pętlę sprzężenia zwrotnego. Kolejne stopnie
+realizują prostą inwersję sygnału poprzedzającego.
 Kluczowym elementem implementacyjnym jest użycie atrybutów \texttt{dont\_touch} oraz \texttt{keep},
 przypisanych do sygnału \texttt{w}. Atrybuty te informują narzędzia syntezy\cite{amd_vivado_donttouch}
 \cite{amd_vivado_keep}, że pętla kombinacyjna nie jest błędem projektowym, lecz zamierzoną strukturą
@@ -109,54 +135,64 @@ silnie zależnej od właściwości fizycznych układu docelowego, a nie tylko od
 \section{Implementacja generatora bitów losowych}
 
 W niniejszym podrozdziale przedstawiono implementację generatora liczb losowych 
-opartego na wielu instancjach oscylatora pierścieniowego oraz modułu próbkującego.
+opartego na wielu instancjach oscylatora pierścieniowego oraz modułu próbkującego wektor wyjściowy
+sygnałów z modułu instancjonującego oscylatory pierścieniowe.
 
-
-\begin{lstlisting}[language=VHDL,
-caption={Moduł tworzący wiele instancji oscylatorów pierścieniowych (\texttt{ro\_bank.vhdl})},
-label={lst:ro_bank}]
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-
-entity ro_bank is
-    port (
-        enable : in  std_logic;
-        ro_vec : out std_logic_vector(7 downto 0)
-    );
-end ro_bank;
-
-architecture RTL of ro_bank is
-    attribute dont_touch : string;
-    component ring_osc
-        generic (
-            STAGES : positive := 7
-        );
-        port (
-            enable : in  std_logic;
-            ro_out : out std_logic
-        );
-    end component;
-    attribute dont_touch of ring_osc : component is "yes";
-    attribute dont_touch of RTL      : architecture is "yes";
-begin
-    ro0 : ring_osc generic map (STAGES => 7)  port map (enable => enable, ro_out => ro_vec(0));
-    ro1 : ring_osc generic map (STAGES => 9)  port map (enable => enable, ro_out => ro_vec(1));
-    ro2 : ring_osc generic map (STAGES => 11) port map (enable => enable, ro_out => ro_vec(2));
-    ro3 : ring_osc generic map (STAGES => 13) port map (enable => enable, ro_out => ro_vec(3));
-    ro4 : ring_osc generic map (STAGES => 15) port map (enable => enable, ro_out => ro_vec(4));
-    ro5 : ring_osc generic map (STAGES => 17) port map (enable => enable, ro_out => ro_vec(5));
-    ro6 : ring_osc generic map (STAGES => 21) port map (enable => enable, ro_out => ro_vec(6));
-    ro7 : ring_osc generic map (STAGES => 25) port map (enable => enable, ro_out => ro_vec(7));
-end RTL;
-\end{lstlisting}
-
-Listing~\ref{lst:ro_bank} przedstawia moduł tworzący wektor sygnałów logicznych z ośmiu instancji
-oscylatorów pierścieniowych. Każdy z oscylatorów ma inną liczbę inwerterów. Różna liczba stopni 
+Listing \ref{lst:ro_bank} przedstawia moduł tworzący wektor sygnałów logicznych z wielu instancji
+oscylatorów pierścieniowych. Liczba inwerterów zależy od tablicy \texttt{STAGE\_TABLE}. Różna liczba stopni 
 przekłada się na różne częstotliwości pracy poszczególnych oscylatorów. W praktyce oznacza to, 
 że każdy sygnał w wektorze \texttt{ro\_vec} oscyluje z inną częstotliwością nominalną, zależną od 
 sumarycznego opóźnienia propagacji w łańcuchu inwerterów. Zjawiska szumowe, fluktuacje napięcia 
 zasilania oraz lokalne różnice technologiczne powodują niewielkie, losowe zmiany tych opóźnień w czasie. 
 To właśnie te niewielkie odchylenia są źródłem entropii wykorzystywanej w generatorze.
+
+\begin{lstlisting}[language=VHDL,
+caption={Moduł tworzący wiele instancji oscylatorów pierścieniowych (\texttt{ro\_bank.vhdl})},
+label={lst:ro_bank}]
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity ro_bank is
+    generic (OUT_WIDTH : positive := 8);
+    port (
+        enable        : in  std_logic;
+        ro_xor_vector : out std_logic_vector(OUT_WIDTH - 1 downto 0)
+    );
+end entity ro_bank;
+
+architecture rtl of ro_bank is
+    constant RO_COUNT : positive := 2 * OUT_WIDTH;
+    type stage_count_array is array (natural range <>) of positive;
+    constant STAGE_TABLE : stage_count_array(0 to 15) := (7,  9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37);
+    signal ro_vec : std_logic_vector(RO_COUNT - 1 downto 0);
+    attribute dont_touch : string;
+    attribute keep       : string;
+    component ring_osc is
+        generic (STAGES : positive := 7);
+        port (
+            enable : in  std_logic;
+            ro_out : out std_logic);
+    end component ring_osc;
+    attribute dont_touch of ring_osc      : component    is "yes";
+    attribute dont_touch of ro_vec        : signal       is "yes";
+    attribute keep       of ro_vec        : signal       is "true";
+    attribute dont_touch of ro_xor_vector : signal       is "yes";
+    attribute keep       of ro_xor_vector : signal       is "true";
+    attribute dont_touch of rtl           : architecture is "yes";
+begin
+    gen_ro : for i in 0 to RO_COUNT - 1 generate
+        u_ro : ring_osc
+            generic map (STAGES => STAGE_TABLE(i))
+            port map (
+                enable => enable,
+                ro_out => ro_vec(i)
+            );
+    end generate gen_ro;
+    gen_xor : for i in 0 to OUT_WIDTH - 1 generate
+        ro_xor_vector(i) <= ro_vec(2 * i) xor ro_vec(2 * i + 1);
+    end generate gen_xor;
+end architecture rtl;
+\end{lstlisting}
 
 Atrybut \texttt{dont\_touch} został użyty zarówno dla komponentu \texttt{ring\_osc}, jak i całej architektury, 
 aby zapobiec optymalizacjom syntezatora. Bez tego narzędzie mogłoby uprościć strukturę, 
@@ -187,15 +223,10 @@ end ro_sampler;
 
 architecture RTL of ro_sampler is
     signal ff1, ff2 : std_logic_vector(7 downto 0);
-    attribute ASYNC_REG  : string;
-    attribute dont_touch : string;
-    attribute KEEP       : string;
-    attribute ASYNC_REG  of ff1 : signal is "TRUE";
-    attribute ASYNC_REG  of ff2 : signal is "TRUE";
-    attribute dont_touch of ff1 : signal is "yes";
-    attribute dont_touch of ff2 : signal is "yes";
-    attribute keep       of ff1 : signal is "true";
-    attribute keep       of ff2 : signal is "true";
+    attribute ASYNC_REG, dont_touch, KEEP : string;
+    attribute ASYNC_REG  of ff1, ff2 : signal is "TRUE";
+    attribute dont_touch of ff1, ff2 : signal is "yes";
+    attribute keep       of ff1, ff2 : signal is "true";
 begin
     process(clk, rst_l)
     begin
@@ -211,7 +242,7 @@ begin
 end RTL;
 \end{lstlisting}
 
-Listing~\ref{lst:ro_sampler} to moduł odpowiedzialny za próbkowanie i synchronizację ośmiobitowego
+Listing \ref{lst:ro_sampler} to moduł odpowiedzialny za próbkowanie i synchronizację ośmiobitowego
 wektora sygnałów z oscylatorów pierścieniowych. Wejście \texttt{ro\_vec} jest asynchroniczne względem
 zegara systemowego \texttt{clk}, dlatego nie może być bezpośrednio przekazane do dalszej logiki 
 sekwencyjnej. W tym celu zastosowano dwustopniowy synchronizator zbudowany z rejestrów \texttt{f1} oraz 
@@ -224,28 +255,130 @@ ekstrakcji bitów losowych. Dodatkowo użyto atrybutów \texttt{ASYNC\_REG}, \te
 synchronizacji sygnałów asynchronicznych i nie powinny zostać usunięte, scalone ani zoptymalizowane 
 w sposób zmieniający ich funkcję\cite{amd_vivado_asyncreg}.
 
+\section{Implementacja modułu ekstrakcji entropii}
+
+W niniejszym podrozdziale przedstawiono implementację modułu odpowiedzialnego za
+przetworzenie surowych, spróbkowanych przebiegów z oscylatorów pierścieniowych w strumień
+bajtów gotowych do wysłania interfejsem komunikacyjnym. Celem tego etapu projektu jest
+oddzielenie warstwy generującej entropię od warstwy transmisyjnej, tak aby zmiana liczby
+oscylatorów lub prędkości transmisji nie wymagała modyfikacji pozostałych elementów
+układu. Wejściem modułu jest ośmiobitowy wektor \texttt{ro\_sync}, zawierający stany
+wszystkich oscylatorów przeprowadzone uprzednio przez rejestry synchronizujące, co
+eliminuje ryzyko propagacji stanów metastabilnych do dalszej części projektu. Cała logika
+pracuje synchronicznie ze zboczem narastającym zegara systemowego, z synchronicznym
+resetem aktywnym w stanie niskim (\texttt{rst\_l}). Kluczowy fragment implementacji
+przedstawiono na listingu \ref{lst:entropy-extractor}.
+
+\begin{lstlisting}[language=VHDL,
+caption={Ekstrakcja bitów i buforowanie strumienia (entropy\_mixer.vhdl)},
+label={lst:entropy-extractor}]
+if have_first = '0' then
+    prev_vec   <= ro_sync;
+    have_first <= '1';
+else
+    fifo_v := bit_fifo;
+    cnt_v  := fifo_count;
+
+    for i in 0 to 7 loop
+        if prev_vec(i) = '0' and ro_sync(i) = '1' then
+            if cnt_v < 16 then
+                fifo_v(cnt_v) := '0';
+                cnt_v := cnt_v + 1;
+            end if;
+        elsif prev_vec(i) = '1' and ro_sync(i) = '0' then
+            if cnt_v < 16 then
+                fifo_v(cnt_v) := '1';
+                cnt_v := cnt_v + 1;
+            end if;
+        end if;
+    end loop;
+
+    if cnt_v >= 8 and uart_ready = '1' then
+        random_byte_r <= fifo_v(7 downto 0);
+        valid_r       <= '1';
+
+        for j in 0 to 7 loop
+            fifo_v(j) := fifo_v(j + 8);
+        end loop;
+        for j in 8 to 15 loop
+            fifo_v(j) := '0';
+        end loop;
+
+        cnt_v := cnt_v - 8;
+    end if;
+
+    bit_fifo   <= fifo_v;
+    fifo_count <= cnt_v;
+    have_first <= '0';
+end if;
+\end{lstlisting}
+
+Ekstrakcja entropii opiera się na detekcji zboczy, a nie na bezpośrednim odczycie stanu
+oscylatorów. Bieżący wektor \texttt{ro\_sync} porównywany jest z próbką poprzednią,
+przechowywaną w rejestrze \texttt{prev\_vec}, przy czym dla każdego z ośmiu kanałów
+niezależnie badana jest zmiana stanu: zbocze narastające interpretowane jest jako bit
+o wartości \texttt{'0'}, zbocze opadające jako \texttt{'1'}, natomiast brak zmiany stanu
+nie generuje żadnego bitu. Ponieważ dla każdego oscylatora zbocza narastające i opadające
+muszą występować naprzemiennie, liczba wygenerowanych zer i jedynek pozostaje w dłuższym
+przebiegu zrównoważona niezależnie od współczynnika wypełnienia sygnału. Odrzucenie
+próbek, w których stan oscylatora nie zmienił się między kolejnymi taktami, eliminuje
+ponadto najsilniej skorelowaną część strumienia wejściowego, powstającą przy próbkowaniu
+oscylatora zegarem o zbyt wysokiej częstotliwości.
+
+Znacznik \texttt{have\_first} po każdym cyklu porównania jest ponownie zerowany, w efekcie
+czego moduł pracuje w rytmie dwutaktowym: w pierwszym takcie rejestrowana jest próbka
+odniesienia, w drugim następuje porównanie i ekstrakcja bitów. Efektywna częstotliwość
+próbkowania oscylatorów jest zatem dwukrotnie niższa od częstotliwości zegara
+systemowego, a kolejne porównywane pary próbek nie zachodzą na siebie, co ogranicza
+korelację między sąsiednimi bitami strumienia wyjściowego.
+
+Pozyskane bity gromadzone są w szesnastobitowym buforze \texttt{bit\_fifo}, którego
+zapełnienie śledzi licznik \texttt{fifo\_count}. Buforowanie jest konieczne, ponieważ
+liczba bitów uzyskiwanych wjednym cyklu porównania jest zmienna i zależy od tego, ile
+oscylatorów zmieniło stan - może wynosić od zera do ośmiu. Gdy w buforze znajduje się co
+najmniej osiem bitów, a nadajnik zgłasza gotowość sygnałem \texttt{uart\_ready}, osiem
+najstarszych bitów wystawiane jest na port \texttt{random\_byte} wraz z jednotaktowym
+impulsem \texttt{random\_valid}, po czym zawartość bufora przesuwana jest o osiem pozycji,
+a licznik odpowiednio zmniejszany. Warunkowanie transmisji flagą gotowości nadajnika
+realizuje mechanizm handshake opisany w kolejnym podrozdziale i zapobiega
+generowaniu bajtów szybciej, niż jest w stanie odebrać je interfejs komunikacyjny;
+nadmiarowe bity pozostają w buforze do czasu zwolnienia nadajnika.
+
+Przedstawiony moduł stanowi naturalne miejsce w ścieżce przetwarzania danych, w którym
+można zaimplementować sprzętowe algorytmy korekcji rozkładu (ang. \emph{debiasing}).
+Umieszczenie takiego bloku bezpośrednio przed nadajnikiem, a więc po ekstrakcji bitów
+i przed ich serializacją do bajtów, jest rozwiązaniem korzystnym z dwóch powodów.
+Po pierwsze, korekcja operuje wówczas na strumieniu bitowym o ustalonym formacie,
+niezależnie od liczby użytych oscylatorów. Po drugie, algorytmy tej klasy charakteryzują
+się zmienną przepustowością wyjściową, a obecny w module bufor pozwala pogodzić ją ze
+stałą, ramkową naturą transmisji UART. Typowym przykładem jest korektor von Neumanna,
+analizujący strumień w rozłącznych parach bitów: parę \texttt{01} zastępuje bitem
+\texttt{'0'}, parę \texttt{10} bitem \texttt{'1'}, natomiast pary \texttt{00} i \texttt{11}
+odrzuca w całości. Procedura ta usuwa systematyczne odchylenie prawdopodobieństwa
+wystąpienia zera i jedynki, o ile kolejne bity są statystycznie niezależne, kosztem
+redukcji przepustowości - w przypadku źródła nieobciążonego do około jednej czwartej
+strumienia wejściowego. Zastosowany mechanizm detekcji zboczy realizuje częściowo
+podobne zadanie, jednak w odniesieniu do pojedynczego kanału i w domenie czasu, przez co
+nie usuwa korelacji między kanałami, implementacja algorytmu wybielania może zostać wykonana
+również już po akwizycji danych z modułu nadajnika UART po stronie urządzenia docelowego.
+
 \section{Implementacja protokołu UART do transmisji ciągu losowych bitow}
 
 W niniejszym podrozdziale przedstawiono implementację protokołu UART, przeznaczoną do 
 transmisji ciągu losowych bitów generowanych przez generator. Celem tego etapu 
 projektu jest umożliwienie niezależnej, asynchronicznej komunikacji pomiędzy układem FPGA a 
-systemem zewnętrznym, w którym dane losowe mogą być dalej przetwarzane lub analizowane.
+systemem zewnętrznym, w którym dane losowe mogą być dalej przetwarzane lub analizowane. Moduł
+jest parametryzowany przez parametr generic \texttt{clks\_per\_bit} decydujący o szybkości nadajnika (listing \ref{lst:uart_tx_entity}).
 
 \begin{lstlisting}[language=VHDL,
-caption={Moduł UART TX (uart\_tx.vhdl)},
-label={lst:uart_tx}]
+caption={Entity UART TX (uart\_tx.vhdl)},
+label={lst:uart_tx_entity}]
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
-
 -- clks_per_bit = CLK_FREQ / BAUD_RATE
--- 100 MHz: 9600 baud (10417), 19200 baud (5208), 38400 baud (2604),
---          57600 baud (1736), 115200 baud (868)
 -- 50 MHz:  9600 baud (5208),  19200 baud (2604), 38400 baud (1302),
 --          57600 baud (868),  115200 baud (434)
--- 25 MHz:  9600 baud (2604),  19200 baud (1302), 38400 baud (651),
---          57600 baud (434),  115200 baud (217)
-
 entity uart_tx is
     generic (
         clks_per_bit : integer := 10417
@@ -259,79 +392,83 @@ entity uart_tx is
         tx_out     : out std_logic
     );
 end uart_tx;
+\end{lstlisting}
 
-architecture RTL of uart_tx is
-    type t_state is (
-        IDLE,
-        START_BIT,
-        DATA_BITS,
-        STOP_BIT
-    );
-    signal state    : t_state := IDLE;
-    signal clk_cnt  : integer range 0 to clks_per_bit-1 := 0;
-    signal bit_idx  : integer range 0 to 7 := 0;
-    signal tx_buf   : std_logic_vector(7 downto 0) := (others => '0');
-begin
+Architektura modułu uart\_tx to typowy przykład maszyny stanów która stanowi podstawową konstrukcję w projektach
+FPGA (listing \ref{lst:uart_tx}).
+Nadajnik zrealizowano jako automat skończony (ang. \emph{finite state machine}, FSM)
+o czterech stanach, z których każdy odpowiada kolejnej części ramki UART w formacie 8N1. 
 
-    process(clk)
-    begin
-        if rising_edge(clk) then
-            if rst_l = '0' then
-                state    <= IDLE;
-                tx_out   <= '1';
-                tx_ready <= '1';
-                clk_cnt  <= 0;
-                bit_idx  <= 0;
-    
+W stanie \texttt{IDLE} linia \texttt{tx\_out}
+utrzymywana jest w stanie wysokim, licznik \texttt{clk\_cnt} oraz wskaźnik bitu
+\texttt{bit\_idx} są zerowane, a flaga \texttt{tx\_ready} sygnalizuje gotowość na przyjęcie
+nowego bajtu. Wystawienie przez modułnadrzędny flagi \texttt{data\_valid} powoduje
+zatrzaśnięcie danych w rejestrze \texttt{tx\_buf}, opuszczenie flagi gotowości i przejście
+do stanu \texttt{START\_BIT}, w którym linia jest ściągana do zera na czas jednego okresu
+bitowego - to zbocze opadające stanowi dla odbiornika znacznik początku transmitowanej ramki.
+
+Stan \texttt{DATA\_BITS} wyprowadza na linię kolejne bity z rejestru \texttt{tx\_buf},
+adresowane wskaźnikiem \texttt{bit\_idx}, począwszy od bitu najmniej znaczącego, zgodnie
+z konwencją UART. Po ośmiu bitach automat przechodzi do stanu \texttt{STOP\_BIT}, w którym
+linia wraca do stanu wysokiego na czas jednego bitu, po czym następuje powrót do
+\texttt{IDLE} i ponowne zgłoszenie gotowości.
+
+W każdym ze stanów odmierzanie czasu realizuje ten sam mechanizm: licznik \texttt{clk\_cnt}
+jest inkrementowany do wartości \texttt{clks\_per\_bit-1}, a jego przepełnienie wyznacza
+moment zmiany stanu. Parametr \texttt{clks\_per\_bit} stanowi iloraz częstotliwości zegara
+systemowego i zadanej prędkości transmisji, dzięki czemu szybkość transmisji można zmienić
+bez modyfikacji struktury automatu. Zastosowanie jednego wspólnego licznika dla wszystkich
+faz ramki gwarantuje jednakowy czas trwania każdego bitu, co jest warunkiem poprawnego
+próbkowania sygnału po stronie odbiornika.
+
+Komunikację z pozostałymi modułami projektu oparto na mechanizmie handshake z użyciem flag
+\texttt{data\_valid} i \texttt{tx\_ready}. Rozwiązanie to eliminuje konieczność
+odmierzania czasu transmisji przez moduł nadrzędny - nowa dana może zostać wystawiona
+wyłącznie wtedy, gdy nadajnik zgłasza gotowość, co zapobiega nadpisaniu zawartości rejestru
+\texttt{tx\_buf} w trakcie trwania ramki i utracie danych.
+
+\begin{lstlisting}[language=VHDL,
+caption={UART TX State Machine (uart\_tx.vhdl)},
+label={lst:uart_tx}]
+case state is
+    when IDLE =>
+        tx_out   <= '1';
+        tx_ready <= '1';
+        clk_cnt  <= 0;
+        bit_idx  <= 0;
+        if data_valid = '1' then
+            tx_buf  <= data_in;
+            tx_ready <= '0';
+            state   <= START_BIT;
+        end if;
+    when START_BIT =>
+        tx_out <= '0';
+        if clk_cnt < clks_per_bit-1 then
+            clk_cnt <= clk_cnt + 1;
+        else
+            clk_cnt <= 0;
+            state   <= DATA_BITS;
+        end if;
+    when DATA_BITS =>
+        tx_out <= tx_buf(bit_idx);
+        if clk_cnt < clks_per_bit-1 then
+            clk_cnt <= clk_cnt + 1;
+        else
+            clk_cnt <= 0;
+            if bit_idx < 7 then
+                bit_idx <= bit_idx + 1;
             else
-                case state is
-                    when IDLE =>
-                        tx_out   <= '1';
-                        tx_ready <= '1';
-                        clk_cnt  <= 0;
-                        bit_idx  <= 0;
-    
-                        if data_valid = '1' then
-                            tx_buf  <= data_in;
-                            tx_ready <= '0';
-                            state   <= START_BIT;
-                        end if;
-                    when START_BIT =>
-                        tx_out <= '0';
-    
-                        if clk_cnt < clks_per_bit-1 then
-                            clk_cnt <= clk_cnt + 1;
-                        else
-                            clk_cnt <= 0;
-                            state   <= DATA_BITS;
-                        end if;
-                    when DATA_BITS =>
-                        tx_out <= tx_buf(bit_idx);
-                        if clk_cnt < clks_per_bit-1 then
-                            clk_cnt <= clk_cnt + 1;
-                        else
-                            clk_cnt <= 0;
-    
-                            if bit_idx < 7 then
-                                bit_idx <= bit_idx + 1;
-                            else
-                                bit_idx <= 0;
-                                state   <= STOP_BIT;
-                            end if;
-                        end if;
-                    when STOP_BIT =>
-                        tx_out <= '1';
-                        if clk_cnt < clks_per_bit-1 then
-                            clk_cnt <= clk_cnt + 1;
-                        else
-                            clk_cnt <= 0;
-                            state   <= IDLE;
-                        end if;
-                end case;
+                bit_idx <= 0;
+                state   <= STOP_BIT;
             end if;
         end if;
-    end process;
-
-end RTL;
-
+    when STOP_BIT =>
+        tx_out <= '1';
+        if clk_cnt < clks_per_bit-1 then
+            clk_cnt <= clk_cnt + 1;
+        else
+            clk_cnt <= 0;
+            state   <= IDLE;
+        end if;
+end case;
 \end{lstlisting}

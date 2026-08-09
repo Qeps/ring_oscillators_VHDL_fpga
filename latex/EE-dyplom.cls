@@ -740,3 +740,5 @@
 }
 
 \usepackage{makecell}
+\usepackage{booktabs}
+\usepackage{placeins}                              % dla \FloatBarrier

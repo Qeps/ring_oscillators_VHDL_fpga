@@ -44,7 +44,7 @@ odrębną interpretację:
         \end{equation}
         miara najgorszego przypadku, odpowiadająca prawdopodobieństwu
         odgadnięcia wartości przy jednej próbie, podstawowa miara
-        w SP 800-90B \cite{turan2018sp80090b}.
+        w SP 800-90B \cite{turan2018sp80090b}, normie określającej wymagania stawiane źródłom entropii stosowanym w generatorach bitów losowych oraz procedury ich walidacji.
 \end{itemize}
 
 Zachodzi porządek
@@ -116,21 +116,6 @@ przejść pomiarowo pierwszą z nich i całkowicie zawieść w drugiej. Dlatego
 w części doświadczalnej niniejszej pracy oba aspekty analizowane są osobno,
 a nie jako pojedyncza ocena jakości strumienia.
 
-Dla źródła o obciążeniu $p$ i jednorodnym łańcuchu Markowa pierwszego rzędu
-o prawdopodobieństwach przejścia $P(X_n \ne X_{n-1}) = q$ stopa entropii
-wynosi
-%
-\begin{equation}
-  \bar{H} = H_1(q) = -q\log_2 q - (1-q)\log_2(1-q),
-  \label{eq:markov-stopa}
-\end{equation}
-%
-co pokazuje, że symetryczny rozkład brzegowy ($p = 0{,}5$, osiągalny przy
-dowolnym $q$) nie daje żadnej gwarancji co do faktycznej entropii na bit:
-dla $q \to 0$ (ciąg złożony z długich serii) lub $q \to 1$ (ciąg
-naprzemienny) stopa entropii dąży do zera przy zachowaniu idealnego
-rozkładu zer i jedynek.
-
 \section{Pojęcie ciągu losowego}
 
 Miary wprowadzone powyżej opisują \emph{źródło}. Osobnym pytaniem jest, co
@@ -138,48 +123,83 @@ znaczy, że konkretny \emph{ciąg} jest losowy. Historycznie ukształtowały si�
 trzy podejścia do formalizacji tego pojęcia.
 
 \paragraph{Podejście częstościowe (statystyczne).}
-Zapoczątkowane przez Richarda von Misesa pojęcie Kollektiv (collective)
-wymaga, aby częstości symboli w ciągu i we wszystkich jego podciągach
-wybranych dopuszczalną regułą były zbieżne do wartości oczekiwanych.
-Jean Ville wykazał, że warunki tego typu nie wystarczają - istnieją ciągi
-spełniające je, a jednocześnie wykazujące jawną regularność (np. sumy
-częściowe zawsze po jednej stronie wartości oczekiwanej). Podejście to jest
-natomiast bezpośrednim źródłem konstrukcji testów statystycznych: każdy test
-bada jedną wybraną własność częstościową.
+Zapoczątkowane przez Richarda von Misesa \cite{vonmises1919} pojęcie
+\emph{Kollektiv} (ang. \emph{collective}) wymaga, aby częstości symboli
+w ciągu i we wszystkich jego podciągach wybranych dopuszczalną regułą były
+zbieżne do wartości oczekiwanych. Zbiór dopuszczalnych reguł wyboru
+doprecyzował Church \cite{church1940}, ograniczając go do reguł obliczalnych.
+Jean Ville \cite{ville1939} wykazał, że warunki tego typu nie wystarczają:
+istnieją ciągi spełniające je, a jednocześnie wykazujące jawną regularność
+(na przykład sumy częściowe zawsze po jednej stronie wartości oczekiwanej).
+Podejście to jest natomiast bezpośrednim źródłem konstrukcji testów
+statystycznych, ponieważ każdy test bada jedną wybraną własność częstościową.
 
 \paragraph{Podejście złożonościowe.}
-Według Kołmogorowa \cite{kolmogorov1965three} i Martina-Löfa ciąg jest
-losowy, jeśli nie istnieje jego opis krótszy od samego ciągu - oznacza to,
-że złożoność algorytmiczna jest bliska jego długości. Złożoność Kołmogorowa
-jest nieobliczalna, co oznacza, że nie istnieje uniwersalny, skończony test
-losowości. Ma to fundamentalną konsekwencję praktyczną: badanie generatora
-może jedynie falsyfikować hipotezę o losowości, nigdy natomiast jej nie
-potwierdzi.
+Według Kołmogorowa \cite{kolmogorov1965three} i Martina-Löfa
+\cite{martinlof1966} ciąg jest losowy, jeśli nie istnieje jego opis krótszy
+od samego ciągu, co oznacza, że jego złożoność algorytmiczna jest bliska
+jego długości. Złożoność Kołmogorowa jest nieobliczalna, więc nie istnieje
+uniwersalny, skończony test losowości. Ma to fundamentalną konsekwencję
+praktyczną: badanie generatora może jedynie falsyfikować hipotezę
+o losowości, nigdy natomiast jej nie potwierdzi.
 
 \paragraph{Podejście obliczeniowe (nieprzewidywalność).}
 W kryptografii przyjmuje się kryterium nieodróżnialności obliczeniowej od
-ciągu idealnego oraz test następnego bitu: generator jest bezpieczny, jeśli
-żaden algorytm o ograniczonych zasobach nie przewiduje kolejnego bitu
-z prawdopodobieństwem istotnie większym niż $1/2$. Do tego dochodzą wymagania
-odporności wprzód i wstecz (ang. \emph{forward/backward secrecy}): ujawnienie
-stanu wewnętrznego nie może pozwalać na odtworzenie bitów wcześniejszych ani
-przyszłych.
+ciągu idealnego \cite{yao1982theory}, które jest równoważne testowi
+następnego bitu \cite{blum1984how,goldreich2001foundations}. Generator jest
+bezpieczny, jeśli żaden algorytm o ograniczonych zasobach nie przewiduje
+kolejnego bitu z prawdopodobieństwem istotnie większym niż $1/2$. Do tego
+dochodzą wymagania dotyczące kompromitacji stanu wewnętrznego. Odporność na
+cofanie (ang. \emph{backtracking resistance}) oznacza, że ujawnienie stanu
+nie pozwala odtworzyć bitów wcześniejszych. Odporność na przewidywanie
+(ang. \emph{prediction resistance}) oznacza, że ujawnienie stanu nie pozwala
+przewidzieć bitów przyszłych po dostarczeniu do generatora świeżej entropii
+\cite{barker2015sp80090a}. Podobne wymagania, nazywane tajnością wprzód
+i wstecz (ang. \emph{forward/backward secrecy}), formułuje AIS~20
+\cite{killmann2011ais31}.
 
-\subsection{Entropia jako własność źródła, nie ciągu}
+\subsection{Ograniczenia testów statystycznych a ocena źródła}
 
-Warto na tym tle wskazać ograniczenie testów statystycznych. Rejestr LFSR
-o pełnym okresie i długości $m$ generuje ciąg, którego entropia -
-niezależnie od jego długości - wynosi dokładnie $m$ bitów, a mimo to ciąg
-ten przechodzi wszystkie testy pakietu SP 800-22 poza testem złożoności
-liniowej. Entropia jest właściwością źródła, nie ciągu; testy statystyczne
-mierzą jedynie zgodność obserwowanego ciągu z rozkładem odniesienia.
+Warto na tym tle wskazać ograniczenie testów statystycznych. Rozważmy rejestr
+przesuwny ze sprzężeniem liniowym (ang. \emph{Linear Feedback Shift
+Register}, LFSR). Jest to układ złożony z $m$ komórek pamięci, w którym
+w każdym takcie zawartość rejestru przesuwa się o jedną pozycję, a nowy bit
+wprowadzany na jego początek jest sumą modulo~2 (operacją XOR) wybranych
+komórek, zwanych odczepami. Generowany ciąg $s_t$ spełnia zależność
+rekurencyjną
+%
+\begin{equation}
+  s_{t+m} = \bigoplus_{j=0}^{m-1} c_j\, s_{t+j},
+  \qquad c_j \in \{0,1\},
+  \label{eq:lfsr}
+\end{equation}
+%
+w której współczynniki $c_j$ wskazują położenie odczepów i wyznaczają
+wielomian charakterystyczny $P(x) = x^m + \sum_{j=0}^{m-1} c_j x^j$ nad ciałem
+$\mathrm{GF}(2)$. Jeżeli $P(x)$ jest wielomianem pierwotnym, to rejestr
+zainicjowany dowolnym stanem niezerowym generuje ciąg o maksymalnym okresie
+$2^m - 1$, zwany ciągiem $m$ \cite{golomb1982shift}. Ciąg taki ma własności,
+których oczekuje się od ciągu losowego. W jednym okresie liczba jedynek
+różni się od liczby zer o jeden, rozkład długości serii jest zgodny
+z rozkładem idealnym, a autokorelacja przyjmuje dwie wartości, zbliżone do
+zera dla wszystkich przesunięć niezerowych. Ciąg przechodzi więc większość
+klasycznych testów statystycznych.
 
-Wniosek ten wyznacza rolę, jaką analiza statystyczna może w ogóle odgrywać
-w ocenie generatora. Nie dostarcza ona dowodu losowości, lecz zestaw
-warunków koniecznych: wykrywa te odstępstwa od modelu idealnego, dla których
-skonstruowano odpowiedni test. Odstępstwa nieobjęte żadnym testem pozostają
-niewidoczne, dlatego ocena empiryczna musi zawsze towarzyszyć uzasadnieniu
-opartemu na modelu fizycznym źródła.
+Jednocześnie jest on całkowicie deterministyczny. Cały ciąg wynika
+z $m$-bitowego stanu początkowego i znanych odczepów, a algorytm
+Berlekampa-Masseya \cite{massey1969shift} odtwarza strukturę rejestru już
+na podstawie $2m$ kolejnych bitów wyjścia. Entropia takiego ciągu nie
+przekracza $m$ bitów, niezależnie od jego długości, ponieważ każdy bit
+wynika z pierwotnego stanu. Na przykład ciąg o długości $10^6$ bitów
+wytworzony przez rejestr 32-bitowy zawiera co najwyżej 32 bity entropii,
+a entropia przypadająca na bit maleje do zera wraz z długością ciągu.
+
+Wniosek ma znaczenie dla dalszej części pracy. Test statystyczny ocenia
+\emph{ciąg}, natomiast entropia jest własnością \emph{mechanizmu}, który
+ten ciąg wytwarza. Wynik pozytywny nie dowodzi więc nieprzewidywalności,
+a ocena źródła musi opierać się na modelu jego działania i na analizie
+surowych próbek przed jakąkolwiek obróbką deterministyczną
+\cite{turan2018sp80090b}.
 
 \section{Aparat testowania hipotez}
 

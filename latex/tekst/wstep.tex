@@ -8,7 +8,18 @@ Monte Carlo i w algorytmach randomizowanych. W zastosowaniach kryptograficznych 
 zaimplementowany algorytm szyfrowania nie zapewnia ochrony, jeżeli klucz został
 wygenerowany w sposób przewidywalny. Historia kryptografii praktycznej dostarcza wielu
 przykładów podatności, których źródłem był nie sam algorytm, lecz wadliwy generator
-liczb losowych.
+liczb losowych. W 2008 roku ujawniono, że błąd w pakiecie OpenSSL dystrybucji Debian
+ograniczył liczbę możliwych do wygenerowania kluczy do niewielkiego, znanego zbioru
+\cite{yilek2009debian}. Z kolei badanie z 2012 roku, obejmujące skanowanie publicznie
+dostępnych serwerów, wykryło szeroko rozpowszechnione słabe klucze w urządzeniach
+sieciowych, wynikające między innymi ze zbyt małej entropii dostępnej podczas
+uruchamiania systemu \cite{heninger2012mining}. Problem dotyczy również generatorów
+sprzętowych wbudowanych w procesory ogólnego przeznaczenia. Instrukcje RDRAND i RDSEED
+udostępniają programom wyniki działania sprzętowego źródła losowości
+\cite{mechalas2018drng}, a mimo to w 2025 roku firma AMD potwierdziła błąd
+w procesorach z architekturą Zen 5, w którym 16-bitowy i 32-bitowy wariant instrukcji
+RDSEED mógł zwracać wartość zero, sygnalizując jednocześnie poprawne wykonanie operacji
+\cite{amd2025sb7055}.
 
 Powszechnie stosowane generatory pseudolosowe, oparte na deterministycznych algorytmach,
 wytwarzają ciągi o bardzo dobrych właściwościach statystycznych, jednak ich stan
@@ -16,43 +27,50 @@ wewnętrzny jest w pełni określony przez wartość początkową. Ciąg taki je
 odtwarzalny, a jego nieprzewidywalność ma charakter wyłącznie obliczeniowy. Tam, gdzie
 wymagana jest losowość o charakterze fizycznym, konieczne jest sięgnięcie do zjawisk
 niedeterministycznych zachodzących w sprzęcie. Jednym z najczęściej wykorzystywanych
-w układach cyfrowych źródeł tego rodzaju jest jitter, czyli losowa fluktuacja momentów
-przejść sygnału zegarowego, wynikająca z szumu termicznego i migotania w elementach
-półprzewodnikowych.
+w układach cyfrowych źródeł tego rodzaju jest losowa fluktuacja momentów przejść sygnału
+zegarowego, określana w literaturze mianem jitteru (ang. \emph{jitter}). Jej przyczyną
+nie jest wyłącznie szum termiczny. W elementach półprzewodnikowych składają się na nią
+także szum migotania typu $1/f$ oraz, w mniejszym stopniu, szum śrutowy
+\cite{hajimiri1999jitter}, a ponadto zakłócenia o charakterze deterministycznym, takie
+jak wahania napięcia zasilania i przesłuchy z sąsiednich struktur. Za bezpieczne źródło
+entropii można uznać w praktyce jedynie składowe lokalne i nieskorelowane, głównie szum
+termiczny. Składowe deterministyczne mogą pozostawać pod kontrolą atakującego, a szum
+migotania wykazuje długi czas korelacji, więc oba te czynniki prowadzą do zawyżenia
+oszacowań entropii \cite{baudet2011security}.
 
 Układy programowalne FPGA są dla implementacji generatorów sprzętowych platformą
-szczególnie atrakcyjną. Umożliwiają realizację źródła entropii wyłącznie przy użyciu
-dostępnych zasobów logicznych, bez konieczności stosowania dedykowanych elementów
-analogowych, a jednocześnie pozwalają na swobodną modyfikację architektury oraz na pełną
-kontrolę nad rozmieszczeniem struktur w obrębie układu. Najczęściej stosowanym
-rozwiązaniem tej klasy jest oscylator pierścieniowy, złożony z zamkniętego w pętlę
-łańcucha inwerterów o nieparzystej długości, którego przebieg wyjściowy podlega
-kumulującemu się jitterowi. Prostota tej struktury jest jednak pozorna: uzyskana jakość
-strumienia bitów zależy nie tylko od samego opisu logiki, lecz również od sposobu
-odwzorowania jej w zasobach układu, wzajemnego położenia oscylatorów oraz przyjętego
-mechanizmu ekstrakcji bitów z próbkowanego przebiegu.
+szczególnie atrakcyjną. Zrealizowano w nich między innymi generatory wykorzystujące jitter
+pętli fazowych PLL \cite{fischer2002true}, oscylatory pierścieniowe
+\cite{sunar2007provably,schellekens2006fpga,wold2009analysis} oraz metastabilność
+elementów logicznych \cite{majzoobi2011fpga}. Platforma ta umożliwia realizację źródła
+entropii wyłącznie przy użyciu dostępnych zasobów logicznych, bez konieczności stosowania
+dedykowanych elementów analogowych \cite{schellekens2006fpga}, a jednocześnie pozwala na
+swobodną modyfikację architektury oraz na pełną kontrolę nad rozmieszczeniem struktur
+w obrębie układu. Jednym z najczęściej stosowanych rozwiązań tej klasy jest oscylator
+pierścieniowy, złożony z zamkniętego w pętlę łańcucha inwerterów o nieparzystej długości,
+którego przebieg wyjściowy podlega kumulującemu się jitterowi. Prostota tej struktury
+jest jednak pozorna: uzyskana jakość strumienia bitów zależy nie tylko od samego opisu
+logiki, lecz również od sposobu odwzorowania jej w zasobach układu, wzajemnego położenia
+oscylatorów oraz przyjętego mechanizmu ekstrakcji bitów z próbkowanego przebiegu
+\cite{nannipieri2021figaro}. Oscylator pierścieniowy nie jest przy tym jedyną opcją.
+Z literatury znane są oscylatory z efektem przejściowym (ang. \emph{Transition Effect
+Ring Oscillator}, TERO) \cite{varchola2010new}, pierścienie samoczasowe (ang.
+\emph{Self-Timed Ring}, STR) \cite{cherkaoui2013very}, generatory oparte na próbkowaniu
+koherentnym \cite{peetermans2019portable} oraz konstrukcje typu start-stop
+\cite{matuszewski2024startstop}. Odrębną rodzinę stanowią oscylatory pierścieniowe
+z dodatkowymi odczepami sprzężenia zwrotnego realizowanymi bramkami XOR, czyli
+oscylatory Fibonacciego (FiRO) i Galois (GaRO) \cite{golic2006new,dichtl2007high} oraz
+ich połączenie, określane skrótem FiGaRO. Porównanie tych architektur pod względem
+entropii i niezależności od rozmieszczenia w układzie FPGA przedstawiono w pracy
+\cite{nannipieri2021figaro}.
 
-Celem niniejszej pracy jest zaprojektowanie, implementacja oraz przeprowadzenie analizy
-statystycznej generatora bitów losowych opartego na oscylatorach pierścieniowych
-w strukturze układu FPGA. Praca nie ogranicza się do wykazania działania pojedynczej
-implementacji: zasadniczym jej przedmiotem jest zbadanie, w jaki sposób wybrane decyzje
-projektowe wpływają na właściwości statystyczne uzyskiwanego strumienia. Analizie poddano
-cztery konfiguracje generatora, różniące się liczbą oscylatorów, sposobem ich
-rozmieszczenia w strukturze układu, obecnością operacji różnicy symetrycznej na wyjściach
-oraz zastosowaniem korekcji rozkładu metodą von Neumanna. Każdą z nich zbadano trzema
-niezależnymi metodami: analizą odchylenia rozkładu bitów, badaniem autokorelacji oraz
-analizą dwuwymiarowych map rozkładu słów wielobitowych.
-
-Praca składa się z sześciu rozdziałów. Rozdział drugi przedstawia podstawy teoretyczne
-analizy statystycznej ciągów losowych: miary entropii, pojęcie ciągu losowego, aparat
-testowania hipotez oraz zastosowane w dalszej części metody badawcze wraz z omówieniem
-kondycjonowania strumienia i standaryzowanych pakietów testów. Rozdział trzeci omawia
-generatory liczb losowych w technice cyfrowej, ich klasyfikację i model funkcjonalny,
-a następnie oscylator pierścieniowy jako źródło entropii, ze szczególnym uwzględnieniem
-stochastycznego modelu jitteru oraz zjawisk ograniczających entropię. Rozdział czwarty
-opisuje wykonaną implementację: wybór platformy sprzętowej, realizację poszczególnych
-modułów w języku VHDL oraz interfejs komunikacyjny służący do transmisji danych do
-komputera. Rozdział piąty, stanowiący zasadniczą część badawczą, przedstawia narzędzia
-programowe opracowane do akwizycji i analizy danych, parametry badanych konfiguracji
-oraz wyniki wszystkich przeprowadzonych badań, wraz z ich interpretacją. Rozdział szósty
-zawiera podsumowanie pracy oraz wskazanie kierunków dalszego rozwoju.
+Celem niniejszej pracy jest zaprojektowanie, implementacja oraz analiza statystyczna
+generatora bitów losowych opartego na oscylatorach pierścieniowych w strukturze układu
+FPGA. Praca nie ogranicza się do wykazania działania pojedynczej implementacji. Jej
+zasadniczym przedmiotem jest ocena, w jaki sposób wybrane decyzje projektowe wpływają na
+właściwości statystyczne uzyskiwanego strumienia. Przedmiotem analizy są cztery
+konfiguracje generatora, różniące się liczbą oscylatorów, sposobem ich rozmieszczenia
+w strukturze układu, obecnością operacji różnicy symetrycznej na wyjściach oraz
+zastosowaniem korekcji rozkładu metodą von Neumanna. Właściwości każdej z nich ocenia się
+trzema niezależnymi metodami: analizą odchylenia rozkładu bitów, badaniem autokorelacji
+oraz analizą dwuwymiarowych map rozkładu słów wielobitowych.

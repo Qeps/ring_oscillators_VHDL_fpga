@@ -1,16 +1,8 @@
 \chapter{Implementacja generatora na platformie FPGA}
 
-W niniejszym rozdziale przedstawiono praktyczną implementację cyfrowego
-generatora liczb losowych wykorzystującego oscylator pierścieniowy jako
-źródło entropii. Opis obejmuje wybór środowiska projektowego oraz
-platformy sprzętowej, a następnie proces syntezy, implementacji i
-uruchomienia układu na fizycznej płytce FPGA. Celem rozdziału jest
-przedstawienie pełnego przepływu projektowego, od opisu sprzętowego do
-działającej realizacji.
-
 \section{Środowisko projektowe Vivado i wybór platformy sprzętowej}
 
-Do realizacji projektu wybrano środowisko Xilinx Vivado Design Suite,
+Do realizacji badań wybrano środowisko Xilinx Vivado Design Suite,
 które stanowi podstawowe narzędzie do projektowania, syntezy oraz
 implementacji układów FPGA firmy Xilinx. Vivado umożliwia opis logiki
 sprzętowej w językach HDL, przeprowadzenie syntezy logicznej,
@@ -43,7 +35,7 @@ jest istotne w kontekście implementacji generatorów liczb losowych.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\textwidth]{gfx/board}
+    \includegraphics[width=0.75\textwidth]{gfx/board}
     \caption{Płytka ARTY S7-25, źródło: Digilent.com.}
     \label{fig:DevBoard}
 \end{figure}
@@ -56,16 +48,32 @@ obserwację zachowania układu w warunkach rzeczywistych.
 
 \section{Implementacja oscylatora pierścieniowego w języku VHDL}
 
-W niniejszym podrozdziale przedstawiono implementację oscylatora 
-pierścieniowego oraz nadrzędnego modułu generatora liczb losowych,
-opracowaną w języku VHDL i przeznaczoną do syntezy w strukturze FPGA.
+Podrozdział opisuje implementację oscylatora pierścieniowego, który jest
+podstawowym blokiem generatora. Opis w języku VHDL przeznaczony jest do syntezy
+w strukturze FPGA i składa się z trzech części: deklaracji biblioteki,
+deklaracji jednostki oraz architektury opisującej logikę. Każda z nich
+omówiona jest osobno.
+
+\begin{lstlisting}[language=VHDL,
+caption={Standardowe biblioteki VHDL (ring\_oscillator.vhdl)},
+label={lst:ring_oscillator_lib}]
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+\end{lstlisting}
+
+Listing \ref{lst:ring_oscillator_lib} zawiera deklarację biblioteki. Standard
+VHDL udostępnia jedynie dwuwartościowy typ \texttt{bit}, dlatego dołączono
+pakiet \texttt{IEEE.STD\_LOGIC\_1164}, który wprowadza wielowartościowy typ
+\texttt{std\_logic} oraz jego wektorową odmianę \texttt{std\_logic\_vector}.
+Typy te opisują porty \texttt{enable} i \texttt{ro\_out} oraz sygnał
+wewnętrzny \texttt{w}. Pakiet definiuje także operatory logiczne, w tym negację \texttt{not}, użytą
+do zbudowania łańcucha inwerterów. Ponieważ jest on standaryzowany przez IEEE,
+kod pozostaje przenośny między narzędziami różnych producentów, a syntezator
+interpretuje go jednoznacznie.
 
 \begin{lstlisting}[language=VHDL,
 caption={Moduł oscylatora pierścieniowego (ring\_oscillator.vhdl)},
-label={lst:ring_oscillator}]
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-
+label={lst:ring_oscillator_entity}]
 entity ring_osc is
     generic (
         STAGES : positive := 7
@@ -77,9 +85,25 @@ entity ring_osc is
     attribute dont_touch : string;
     attribute dont_touch of ring_osc : entity is "yes";
 end ring_osc;
+\end{lstlisting}
 
+Listing \ref{lst:ring_oscillator_entity} przedstawia deklarację jednostki
+\texttt{ring\_osc}, czyli interfejs modułu. Parametr generyczny
+\texttt{STAGES} określa liczbę stopni inwersji i domyślnie wynosi 7. Liczba
+ta musi być nieparzysta, ponieważ tylko wtedy pętla inwerterów nie ma
+stabilnego stanu logicznego i wymusza ciągłe przełączanie. Zmiana wartości
+parametru pozwala regulować częstotliwość oscylatora bez ingerencji
+w strukturę kodu. Moduł ma dwa porty. Wejście \texttt{enable} steruje wyjściem, a na wyjściu
+\texttt{ro\_out} dostępny jest przebieg oscylatora.
+Atrybut \texttt{dont\_touch} przypisany do całej jednostki informuje narzędzia
+syntezy \cite{amd_vivado_donttouch}, że moduł nie może być usuwany ani
+upraszczany przez optymalizator. Dzięki temu każdy egzemplarz oscylatora
+pozostaje w projekcie odrębną, nienaruszoną strukturą.
+
+\begin{lstlisting}[language=VHDL,
+caption={Logika oscylatora pierścieniowego (ring\_oscillator.vhdl)},
+label={lst:ring_oscillator_logic}]
 architecture RTL of ring_osc is
-
     signal w : std_logic_vector(STAGES-1 downto 0);
 
     attribute keep              : string;
@@ -87,7 +111,6 @@ architecture RTL of ring_osc is
     attribute keep       of w   : signal is "true";
     attribute dont_touch of RTL : architecture is "yes";
 begin
-
     w(0) <= not w(STAGES-1);
 
     gen_inv : for i in 1 to STAGES-1 generate
@@ -95,63 +118,57 @@ begin
     end generate;
 
     ro_out <= w(STAGES-1) when enable = '1' else '0';
-
 end RTL;
-
 \end{lstlisting}
 
-Listing \ref{lst:ring_oscillator} przedstawia prostą, parametryzowaną implementację
-oscylatora pierścieniowego w języku VHDL. Zastosowane rozwiązanie odwzorowuje klasyczną 
-ideę oscylatora pierścieniowego znaną z elektroniki cyfrowej: nieparzystą liczbę inwerterów
-połączonych szeregowo w pętlę zwrotną, w której brak stabilnego stanu logicznego wymusza ciągłe przełączanie.
+Listing \ref{lst:ring_oscillator_logic} zawiera architekturę \texttt{RTL},
+czyli opis logiki oscylatora. Jej rdzeniem jest wektor sygnałów \texttt{w}
+o długości \texttt{STAGES}, w którym każdy element odpowiada wyjściu jednego
+stopnia inwersji.
 
-Standardowy VHDL nie definiuje typów opisujących stany logiczne rzeczywistego układu
-cyfrowego, dlatego konieczne jest dołączenie biblioteki IEEE - w przedstawionym kodzie
-pakiet \texttt{IEEE.STD\_LOGIC\_1164} udostępnia typy \texttt{std\_logic} oraz
-\texttt{std\_logic\_vector}, użyte do opisu portów \texttt{enable}, \texttt{ro\_out}
-i sygnału wewnętrznego \texttt{w}. Pakiet ten definiuje ponadto operatory
-logiczne, w tym negację \texttt{not} wykorzystaną do realizacji łańcucha inwerterów,
-a jego standaryzacja przez IEEE zapewnia przenośność kodu między narzędziami różnych
-producentów oraz jednoznaczną interpretację opisu przez syntezator.
-Rdzeniem projektu jest wektor sygnałów \texttt{w}, którego długość jest określona
-parametrem generycznym \texttt{STAGES}. Każdy element tego wektora odpowiada jednemu
-stopniowi inwersji. Pierwszy stopień otrzymuje na wejście zanegowany sygnał
-z ostatniego elementu łańcucha, co zamyka pętlę sprzężenia zwrotnego. Kolejne stopnie
-realizują prostą inwersję sygnału poprzedzającego.
-Kluczowym elementem implementacyjnym jest użycie atrybutów \texttt{dont\_touch} oraz \texttt{keep},
-przypisanych do sygnału \texttt{w}. Atrybuty te informują narzędzia syntezy\cite{amd_vivado_donttouch}
-\cite{amd_vivado_keep}, że pętla kombinacyjna nie jest błędem projektowym, lecz zamierzoną strukturą
-funkcjonalną. Bez tej deklaracji optymalizator mógłby usunąć lub uprościć logikę, traktując ją jako zbędną 
-lub niepoprawną. W praktyce atrybuty zwiększa szansę zachowania fizycznej struktury pierścienia 
-w docelowym układzie FPGA, co jest warunkiem powstania oscylacji.
-Sygnał wyjściowy \texttt{ro\_out} jest bezpośrednio pobierany z ostatniego stopnia łańcucha inwerterów.
-Jego częstotliwość zależy od liczby stopni inwersji oraz opóźnień propagacji w danej technologii 
-sprzętowej. Dzięki użyciu parametru generycznego możliwa jest łatwa modyfikacja liczby inwerterów,
-a tym samym regulacja częstotliwości oscylatora bez ingerencji w strukturę kodu.
-Całość architektury ma charakter czysto kombinacyjny i świadomie narusza klasyczne zasady
-projektowania synchronicznego, co czyni ją przykładem konstrukcji niskopoziomowej,
-silnie zależnej od właściwości fizycznych układu docelowego, a nie tylko od opisu logicznego.
+Kluczowe znaczenie mają atrybuty \texttt{dont\_touch} i \texttt{keep},
+przypisane do sygnału \texttt{w}, a atrybut \texttt{dont\_touch} także do
+architektury. Informują one narzędzia syntezy
+\cite{amd_vivado_donttouch,amd_vivado_keep}, że pętla kombinacyjna jest
+zamierzoną strukturą funkcjonalną, a nie błędem projektowym. Bez tej
+deklaracji optymalizator mógłby usunąć lub uprościć logikę, traktując ją jako
+zbędną lub niepoprawną. Atrybuty te zwiększają szansę zachowania fizycznej
+struktury pierścienia w docelowym układzie FPGA, co jest warunkiem powstania
+oscylacji.
+
+Pętla sprzężenia zwrotnego zamyka się w przypisaniu
+\texttt{w(0) <= not w(STAGES-1)}. Pierwszy stopień otrzymuje więc na wejście
+zanegowany sygnał z ostatniego elementu łańcucha. Pozostałe stopnie powstają
+w pętli \texttt{generate} i realizują prostą inwersję sygnału poprzedzającego.
+W pętli znajduje się w sumie \texttt{STAGES} inwerterów.
+
+Sygnał wyjściowy \texttt{ro\_out} jest pobierany z ostatniego stopnia łańcucha
+i przekazywany na zewnątrz tylko wtedy, gdy \texttt{enable} ma wartość
+\texttt{'1'}. W przeciwnym razie na wyjściu ustawiany jest stan \texttt{'0'}.
+Sygnał \texttt{enable} nie przerywa zatem pętli, a jedynie bramkuje wyjście,
+więc oscylator pracuje także wtedy, gdy wyjście jest wyłączone. Częstotliwość
+przebiegu zależy od liczby stopni inwersji oraz od opóźnień propagacji
+w danej technologii sprzętowej.
+
+Całość architektury ma charakter czysto kombinacyjny i świadomie narusza
+klasyczne zasady projektowania synchronicznego. Jest to konstrukcja
+niskopoziomowa, silnie zależna od właściwości fizycznych układu docelowego,
+a nie tylko od opisu logicznego.
 
 \section{Implementacja generatora bitów losowych}
 
-W niniejszym podrozdziale przedstawiono implementację generatora liczb losowych 
-opartego na wielu instancjach oscylatora pierścieniowego oraz modułu próbkującego wektor wyjściowy
-sygnałów z modułu instancjonującego oscylatory pierścieniowe.
+Generator składa się z dwóch bloków, które korzystają z oscylatora
+\texttt{ring\_osc} opisanego wcześniej. Pierwszy z nich, moduł
+\texttt{ro\_bank}, tworzy wiele instancji oscylatora i łączy ich wyjścia
+w pary. Drugi, moduł \texttt{ro\_sampler}, próbkuje otrzymany wektor sygnałem
+zegarowym i przekazuje go do dalszego przetwarzania. Każdy z modułów
+omówiono w częściach odpowiadających kolejnym fragmentom kodu.
 
-Listing \ref{lst:ro_bank} przedstawia moduł tworzący wektor sygnałów logicznych z wielu instancji
-oscylatorów pierścieniowych. Liczba inwerterów zależy od tablicy \texttt{STAGE\_TABLE}. Różna liczba stopni 
-przekłada się na różne częstotliwości pracy poszczególnych oscylatorów. W praktyce oznacza to, 
-że każdy sygnał w wektorze \texttt{ro\_vec} oscyluje z inną częstotliwością nominalną, zależną od 
-sumarycznego opóźnienia propagacji w łańcuchu inwerterów. Zjawiska szumowe, fluktuacje napięcia 
-zasilania oraz lokalne różnice technologiczne powodują niewielkie, losowe zmiany tych opóźnień w czasie. 
-To właśnie te niewielkie odchylenia są źródłem entropii wykorzystywanej w generatorze.
+\subsection{Moduł banku oscylatorów}
 
 \begin{lstlisting}[language=VHDL,
-caption={Moduł tworzący wiele instancji oscylatorów pierścieniowych (\texttt{ro\_bank.vhdl})},
-label={lst:ro_bank}]
-library ieee;
-use ieee.std_logic_1164.all;
-
+caption={Jednostka \texttt{ro\_bank} (\texttt{ro\_bank.vhdl})},
+label={lst:ro_bank_entity}]
 entity ro_bank is
     generic (OUT_WIDTH : positive := 8);
     port (
@@ -159,12 +176,46 @@ entity ro_bank is
         ro_xor_vector : out std_logic_vector(OUT_WIDTH - 1 downto 0)
     );
 end entity ro_bank;
+\end{lstlisting}
 
+Listing \ref{lst:ro_bank_entity} przedstawia interfejs modułu. Parametr
+generyczny \texttt{OUT\_WIDTH}, domyślnie równy 8, określa szerokość wektora
+wyjściowego \texttt{ro\_xor\_vector}. Wejście \texttt{enable} jest globalnym
+sygnałem włączającym dla wszystkich oscylatorów w banku.
+
+\begin{lstlisting}[language=VHDL,
+caption={Stałe i sygnały architektury \texttt{ro\_bank} (\texttt{ro\_bank.vhdl})},
+label={lst:ro_bank_decl1}]
 architecture rtl of ro_bank is
     constant RO_COUNT : positive := 2 * OUT_WIDTH;
     type stage_count_array is array (natural range <>) of positive;
     constant STAGE_TABLE : stage_count_array(0 to 15) := (7,  9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37);
     signal ro_vec : std_logic_vector(RO_COUNT - 1 downto 0);
+\end{lstlisting}
+
+Listing \ref{lst:ro_bank_decl1} rozpoczyna architekturę od deklaracji stałych
+i sygnału. Na każdy bit wyjściowy przypadają dwa oscylatory, więc stała
+\texttt{RO\_COUNT} wynosi $2\cdot\texttt{OUT\_WIDTH}$, a dla wartości domyślnej
+powstaje 16 instancji. Ich wyjścia trafiają do wektora \texttt{ro\_vec}
+o szerokości \texttt{RO\_COUNT}.
+
+Tablica \texttt{STAGE\_TABLE} zawiera kolejne liczby nieparzyste od 7 do 37
+i określa liczbę stopni inwersji każdego oscylatora. Im więcej stopni, tym
+większe sumaryczne opóźnienie propagacji i tym niższa częstotliwość, więc
+każdy sygnał w wektorze \texttt{ro\_vec} ma inną częstotliwość nominalną.
+Ponieważ tablica ma 16 elementów, parametr \texttt{OUT\_WIDTH} nie może
+przekraczać 8 bez jej rozszerzenia.
+
+Statyczne różnice technologiczne między elementami układu dodatkowo
+rozstrajają te częstotliwości, ale są stałe w czasie i nie stanowią źródła
+entropii. Źródłem entropii są losowe zmiany opóźnień w czasie, czyli jitter
+wynikający z szumu elektrycznego. Fluktuacje napięcia zasilania także
+zmieniają opóźnienia, jednak mają składową deterministyczną, więc nie należy
+ich traktować jako pewnego źródła losowości.
+
+\begin{lstlisting}[language=VHDL,
+caption={Atrybuty i komponent w architekturze \texttt{ro\_bank} (\texttt{ro\_bank.vhdl})},
+label={lst:ro_bank_decl2}]
     attribute dont_touch : string;
     attribute keep       : string;
     component ring_osc is
@@ -179,6 +230,24 @@ architecture rtl of ro_bank is
     attribute dont_touch of ro_xor_vector : signal       is "yes";
     attribute keep       of ro_xor_vector : signal       is "true";
     attribute dont_touch of rtl           : architecture is "yes";
+\end{lstlisting}
+
+Listing \ref{lst:ro_bank_decl2} kończy część deklaracyjną. Deklaracja
+komponentu \texttt{ring\_osc} odtwarza interfejs jednostki z poprzedniego
+podrozdziału, czyli parametr \texttt{STAGES} oraz porty \texttt{enable}
+i \texttt{ro\_out}.
+
+Atrybut \texttt{dont\_touch} przypisano komponentowi, sygnałom
+\texttt{ro\_vec} i \texttt{ro\_xor\_vector} oraz całej architekturze,
+a atrybut \texttt{keep} obu sygnałom. Bez nich syntezator mógłby uprościć
+strukturę, usunąć pętle kombinacyjne lub połączyć logicznie równoważne
+fragmenty \cite{amd_vivado_donttouch,amd_vivado_keep}. Generator opiera się na
+fizycznych opóźnieniach bramek, więc takie optymalizacje zniszczyłyby jego
+właściwości oscylacyjne.
+
+\begin{lstlisting}[language=VHDL,
+caption={Instancje oscylatorów i operacja XOR w architekturze \texttt{ro\_bank} (\texttt{ro\_bank.vhdl})},
+label={lst:ro_bank_body}]
 begin
     gen_ro : for i in 0 to RO_COUNT - 1 generate
         u_ro : ring_osc
@@ -194,24 +263,31 @@ begin
 end architecture rtl;
 \end{lstlisting}
 
-Atrybut \texttt{dont\_touch} został użyty zarówno dla komponentu \texttt{ring\_osc}, jak i całej architektury, 
-aby zapobiec optymalizacjom syntezatora. Bez tego narzędzie mogłoby uprościć strukturę, 
-usunąć pętle kombinacyjne lub połączyć logicznie równoważne fragmenty, co zniszczyłoby właściwości 
-oscylacyjne układu. W kontekście projektowania FPGA jest to kluczowe - generator opiera się na fizycznych 
-opóźnieniach bramek.
+Listing \ref{lst:ro_bank_body} zawiera część wykonawczą architektury. Pętla
+\texttt{gen\_ro} tworzy \texttt{RO\_COUNT} instancji oscylatora. Liczba stopni
+każdej z nich jest pobierana z tablicy \texttt{STAGE\_TABLE} i przekazywana
+parametrem \texttt{STAGES}, a wyjście trafia do kolejnego bitu wektora
+\texttt{ro\_vec}. Sygnał \texttt{enable} jest doprowadzony do wszystkich
+instancji. Tak jak w pojedynczym oscylatorze, steruje on wyłącznie
+bramkowaniem wyjścia. Przy \texttt{enable = '0'} wektor
+\texttt{ro\_xor\_vector} przyjmuje wartość zero, natomiast pętle inwerterów
+pracują nadal.
 
-Sygnał \texttt{enable} pełni funkcję globalnego włączenia banku oscylatorów. 
-Po jego aktywacji każda instancja zaczyna generować przebieg, którego chwilowa faza i częstotliwość 
-są w niewielkim stopniu nieprzewidywalne. Wektor \texttt{ro\_vec} stanowi więc równoległe źródło 
-ośmiu nieskorelowanych sygnałów, które w dalszych etapach mogą zostać poddane próbkowaniu i 
-obróbce (np. mieszaniu) w celu uzyskania strumienia bitów losowych.
+Pętla \texttt{gen\_xor} łączy oscylatory w pary. Każdy bit
+\texttt{ro\_xor\_vector(i)} jest wynikiem operacji różnicy symetrycznej
+oscylatorów o numerach $2i$ i $2i+1$, a więc dla domyślnej tablicy par
+o liczbie stopni (7, 9), (11, 13), (15, 17) i dalej aż do (35, 37).
+Operacja ta łączy w jednym sygnale zmiany obu przebiegów, a tym samym jitter
+obu oscylatorów. Wektor \texttt{ro\_vec} ma zatem 16 bitów, a wektor
+wyjściowy 8. Nie należy przy tym zakładać, że oscylatory są wzajemnie
+nieskorelowane. Wspólne zasilanie i przesłuchy w strukturze układu mogą je
+sprzęgać, co jest jednym z zagadnień badanych w dalszej części pracy.
+
+\subsection{Moduł próbkujący}
 
 \begin{lstlisting}[language=VHDL,
-caption={Moduł próbkujący (\texttt{ro\_sampler.vhdl})},
-label={lst:ro_sampler}]
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-
+caption={Jednostka \texttt{ro\_sampler} (\texttt{ro\_sampler.vhdl})},
+label={lst:ro_sampler_entity}]
 entity ro_sampler is
     port (
         clk     : in  std_logic;
@@ -220,13 +296,39 @@ entity ro_sampler is
         ro_sync : out std_logic_vector(7 downto 0)
     );
 end ro_sampler;
+\end{lstlisting}
 
+Listing \ref{lst:ro_sampler_entity} przedstawia interfejs modułu. Wejście
+\texttt{clk} jest zegarem systemowym, a \texttt{rst\_l} asynchronicznym
+resetem aktywnym stanem niskim. Do ośmiobitowego wejścia \texttt{ro\_vec}
+doprowadzany jest wektor \texttt{ro\_xor\_vector} z modułu \texttt{ro\_bank},
+a jego szerokość odpowiada domyślnej wartości parametru \texttt{OUT\_WIDTH}.
+Wyjściem modułu jest wektor \texttt{ro\_sync} o tej samej szerokości.
+
+\begin{lstlisting}[language=VHDL,
+caption={Rejestry i atrybuty architektury \texttt{ro\_sampler} (\texttt{ro\_sampler.vhdl})},
+label={lst:ro_sampler_decl}]
 architecture RTL of ro_sampler is
     signal ff1, ff2 : std_logic_vector(7 downto 0);
     attribute ASYNC_REG, dont_touch, KEEP : string;
     attribute ASYNC_REG  of ff1, ff2 : signal is "TRUE";
     attribute dont_touch of ff1, ff2 : signal is "yes";
     attribute keep       of ff1, ff2 : signal is "true";
+\end{lstlisting}
+
+Listing \ref{lst:ro_sampler_decl} zawiera część deklaracyjną architektury.
+Sygnały \texttt{ff1} i \texttt{ff2} są ośmiobitowymi rejestrami, które tworzą
+dwustopniowy synchronizator.
+
+Atrybut \texttt{ASYNC\_REG} informuje narzędzia implementacji, że rejestry
+odbierają dane asynchroniczne i tworzą łańcuch synchronizujący
+\cite{amd_vivado_asyncreg}. Atrybuty \texttt{dont\_touch} i \texttt{keep}
+chronią je przed usunięciem, scaleniem lub optymalizacją zmieniającą ich
+funkcję.
+
+\begin{lstlisting}[language=VHDL,
+caption={Proces próbkujący w architekturze \texttt{ro\_sampler} (\texttt{ro\_sampler.vhdl})},
+label={lst:ro_sampler_body}]
 begin
     process(clk, rst_l)
     begin
@@ -242,18 +344,22 @@ begin
 end RTL;
 \end{lstlisting}
 
-Listing \ref{lst:ro_sampler} to moduł odpowiedzialny za próbkowanie i synchronizację ośmiobitowego
-wektora sygnałów z oscylatorów pierścieniowych. Wejście \texttt{ro\_vec} jest asynchroniczne względem
-zegara systemowego \texttt{clk}, dlatego nie może być bezpośrednio przekazane do dalszej logiki 
-sekwencyjnej. W tym celu zastosowano dwustopniowy synchronizator zbudowany z rejestrów \texttt{f1} oraz 
-\texttt{f2}, do których kolejne próbki sygnału są trafiają na narastającym zboczu zegara. Pierwszy stopień 
-przechwytuje aktualny stan wejścia, drugi stopien ogranicza ryzyko propagacji metastabilności do dalszej 
-części układu. Sygnał wyjściowy \texttt{ro\_sync} stanowi zsynchronizowaną z domeną zegarową wersję 
-wektora \texttt{ro\_vec}, gotową do dalszej obróbki cyfrowej, na przykład zliczania, mieszania lub 
-ekstrakcji bitów losowych. Dodatkowo użyto atrybutów \texttt{ASYNC\_REG}, \texttt{dont\_touch} oraz 
-\texttt{KEEP}, aby poinformować narzędzia syntezy i implementacji, że rejestry te realizują ścieżkę 
-synchronizacji sygnałów asynchronicznych i nie powinny zostać usunięte, scalone ani zoptymalizowane 
-w sposób zmieniający ich funkcję\cite{amd_vivado_asyncreg}.
+Listing \ref{lst:ro_sampler_body} zawiera część wykonawczą. Wejście
+\texttt{ro\_vec} jest asynchroniczne względem zegara \texttt{clk}, więc nie
+może być bezpośrednio przekazane do dalszej logiki sekwencyjnej. Na narastającym
+zboczu zegara \texttt{ff1} przechwytuje aktualny stan wejścia, a \texttt{ff2}
+przejmuje poprzednią zawartość \texttt{ff1}. Reset zeruje oba rejestry.
+
+W tym generatorze próbkowanie asynchronicznego przebiegu zegarem jest
+jednocześnie mechanizmem pozyskiwania entropii. Pierwszy przerzutnik zapisuje
+chwilowy stan przebiegu, który zależy od fazy oscylatora, a więc także od
+skumulowanego jitteru. Gdy zbocze wejścia trafi blisko krawędzi zegara,
+przerzutnik może wejść w stan metastabilny, a drugi stopień ogranicza
+ryzyko propagacji takiego stanu do dalszej części układu.
+
+Sygnał \texttt{ro\_sync} jest zsynchronizowaną z domeną zegarową wersją
+wektora \texttt{ro\_vec}. Jest gotowy do dalszej obróbki cyfrowej, na
+przykład do detekcji zboczy i ekstrakcji bitów losowych.
 
 \section{Implementacja modułu ekstrakcji entropii}
 

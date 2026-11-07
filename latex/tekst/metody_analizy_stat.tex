@@ -201,18 +201,57 @@ a ocena źródła musi opierać się na modelu jego działania i na analizie
 surowych próbek przed jakąkolwiek obróbką deterministyczną
 \cite{turan2018sp80090b}.
 
+\section{Standaryzowane pakiety testów}
+
+Opisane niżej testy stanowią rdzeń analizy własnej, prowadzonej z pełną
+kontrolą nad parametrami pomiaru. Ich uzupełnieniem są standaryzowane
+pakiety, pozwalające na porównanie wyników z literaturą:
+
+\begin{itemize}
+  \item \textbf{NIST SP 800-22} \cite{rukhin2010sp80022} - 15 testów
+        obejmujących częstość, serie, rangę macierzy, transformatę Fouriera,
+        złożoność liniową, entropię przybliżoną i inne; przeznaczony do
+        oceny ciągów rzędu $10^6$ bitów i wyżej, z analizą rozkładu
+        wartości $p$ dla wielu podciągów;
+  \item \textbf{NIST SP 800-90B} \cite{turan2018sp80090b} - nie pakiet
+        testów zgodności, lecz zestaw estymatorów min-entropii (ścieżka
+        i.i.d. oraz ścieżka non-i.i.d., w której przyjmuje się minimum
+        z dziesięciu estymatorów, m.in. kolizyjnego, kompresyjnego,
+        markowskiego i opartych na predykcji);
+  \item \textbf{Dieharder} oraz \textbf{TestU01} \cite{lecuyer2007testu01}
+        --- rozbudowane baterie testów (w tym \emph{BigCrush}) o istotnie
+        wyższej mocy, wymagające jednak strumieni rzędu $10^{11}$ bitów,
+        co dla generatorów sprzętowych o umiarkowanej przepustowości bywa
+        praktycznie nieosiągalne;
+  \item \textbf{AIS-31} \cite{killmann2011ais31} - procedury T0-T8
+        stosowane w certyfikacji europejskiej, obejmujące zarówno strumień
+        surowy, jak i wyjściowy, wraz z wymaganiem istnienia
+        stochastycznego modelu źródła.
+\end{itemize}
+
+Podział ról między analizą własną a pakietami standaryzowanymi jest zatem
+następujący: testy dedykowane (obciążenie, autokorelacja, mapy 2D)
+lokalizują \emph{przyczynę} defektu i pozwalają powiązać ją z parametrami
+układu, natomiast pakiety standaryzowane orzekają o \emph{globalnej}
+zgodności strumienia z modelem idealnym. Żadna z tych metod nie zastępuje
+oszacowania min-entropii, która - zgodnie z porządkiem
+\eqref{eq:porzadek} - pozostaje ostateczną miarą siły kryptograficznej
+generatora.
+
 \section{Aparat testowania hipotez}
 
 Każdy test statystyczny losowości ma tę samą strukturę formalną. Formułuje
 się hipotezę zerową
 %
 \begin{equation}
-  H_0: \text{badany ciąg jest realizacją źródła i.i.d. o } P(0) = P(1) = \tfrac{1}{2},
+  H_0:\ \text{bity } b_1,\dots,b_N \text{ są wzajemnie niezależne oraz }
+  P(b_i = 1) = \tfrac{1}{2} \text{ dla każdego } i,
   \label{eq:h0}
 \end{equation}
 %
-wyznacza statystykę testową $T$, której rozkład przy prawdziwości $H_0$ jest
-znany (najczęściej asymptotycznie normalny lub $\chi^2$), i oblicza się
+czyli że badany ciąg powstał jak w serii rzutów idealną monetą. Następnie
+wyznacza się statystykę testową $T$, której rozkład przy prawdziwości $H_0$
+jest znany (najczęściej asymptotycznie normalny lub $\chi^2$), i oblicza się
 wartość $p$ jako prawdopodobieństwo uzyskania wyniku co najmniej tak
 skrajnego jak zaobserwowany:
 %
@@ -222,29 +261,39 @@ skrajnego jak zaobserwowany:
 \end{equation}
 %
 Hipotezę odrzuca się, gdy $p < \alpha$, gdzie $\alpha$ jest przyjętym
-poziomem istotności (w pakiecie SP 800-22 standardowo $\alpha = 0{,}01$).
-Interpretacja wyniku wymaga trzech zastrzeżeń, istotnych dla poprawnego
-odczytania rezultatów pomiarowych.
+poziomem istotności (w pakiecie SP 800-22 standardowo $\alpha = 0{,}01$
+\cite{rukhin2010sp80022}). Interpretacja wyniku wymaga trzech zastrzeżeń,
+istotnych dla poprawnego odczytania rezultatów pomiarowych.
 
 Po pierwsze, $p \ge \alpha$ oznacza wyłącznie brak podstaw do odrzucenia
-$H_0$, nigdy jej potwierdzenia - co jest bezpośrednią konsekwencją
+$H_0$, nigdy jej potwierdzenie. Jest to bezpośrednia konsekwencja
 nieobliczalności złożoności Kołmogorowa omówionej wcześniej.
 
-Po drugie, przy wielokrotnym testowaniu odrzucenia pojawiają się z
-częstością $\alpha$ nawet dla źródła idealnego. Dla $k$ niezależnych testów
+Po drugie, przy wielokrotnym testowaniu odrzucenia pojawiają się
+z częstością $\alpha$ nawet dla źródła idealnego. Dla $k$ niezależnych testów
 oczekiwana liczba fałszywych odrzuceń wynosi $k\alpha$, a przy $\alpha = 0{,}01$
-i $k = 100$ podciągach jedno odrzucenie jest wynikiem \emph{typowym}, nie
+i $k = 100$ podciągach jedno odrzucenie jest wynikiem \emph{typowym}, a nie
 sygnałem błędu. Poprawnym kryterium jest więc nie „brak odrzuceń”, lecz
 zgodność \emph{rozkładu} uzyskanych wartości $p$ z rozkładem jednostajnym
-$U(0,1)$, badana testem $\chi^2$ lub testem Kołmogorowa--Smirnowa.
+$U(0,1)$, badana testem $\chi^2$ lub testem Kołmogorowa-Smirnowa.
 
 Po trzecie, moc testu rośnie z długością ciągu. Odstępstwo o ustalonej
-wielkości - np. obciążenie $\varepsilon$ - pozostaje niewykrywalne dla
-próby zbyt małej i jest wykrywane niemal zawsze dla próby dostatecznie
-dużej. Wielkość odstępstwa (rozmiar efektu) i jego istotność statystyczna
-są zatem pojęciami rozłącznymi: przy strumieniu rzędu $10^8$ bitów wykrywalne
-stają się obciążenia praktycznie nieistotne z punktu widzenia entropii,
-i odwrotnie --- krótki rekord nie pozwala orzec o braku obciążenia.
+wielkości, na przykład obciążenie $\varepsilon$ rozumiane jako odchylenie
+częstości jedynek od $1/2$, pozostaje niewykrywalne dla próby zbyt małej
+i jest wykrywane niemal zawsze dla próby dostatecznie dużej. Wielkość
+odstępstwa (rozmiar efektu) i jego istotność statystyczna są zatem pojęciami
+rozłącznymi. Można to ująć ilościowo. Test monobitowy, omówiony w następnej
+sekcji, odrzuca $H_0$ na poziomie $\alpha = 0{,}01$, gdy
+$|\varepsilon| > 1{,}29/\sqrt{N}$, więc najmniejsze wykrywalne obciążenie
+maleje jak $1/\sqrt{N}$. Dla rekordu o długości $N = 10\,485\,760$ bitów,
+takiej jak w badaniach opisanych w tej pracy, wynosi ono
+$\varepsilon \approx 4\cdot 10^{-4}$. Obciążenie takie obniża min-entropię
+o około $2\varepsilon/\ln 2 \approx 1\cdot 10^{-3}$ bita, a entropię Shannona
+tylko o około $2\varepsilon^2/\ln 2 \approx 5\cdot 10^{-7}$ bita na bit.
+Dziesięciokrotne wydłużenie rekordu zmniejsza wykrywalne obciążenie jedynie
+około trzykrotnie. Przy bardzo długich rekordach test wykrywa więc obciążenia
+o znikomym znaczeniu dla entropii, a krótki rekord nie pozwala orzec o braku
+obciążenia istotnego.
 
 \section{Analiza rozkładu brzegowego: obciążenie i test monobitowy}
 
@@ -267,23 +316,41 @@ z centralnego twierdzenia granicznego wynika
 \begin{equation}
   Z = \frac{|S_N|}{\sqrt{N}} \;\xrightarrow{\;d\;}\; |\mathcal{N}(0,1)| ,
   \qquad
-  p = \operatorname{erfc}\!\left(\frac{|S_N|}{\sqrt{2N}}\right).
+  p = P\big(|\mathcal{N}(0,1)| \ge Z\big)
+    = \operatorname{erfc}\!\left(\frac{Z}{\sqrt{2}}\right)
+    = \operatorname{erfc}\!\left(\frac{|S_N|}{\sqrt{2N}}\right),
   \label{eq:monobit}
 \end{equation}
 %
+gdzie $\operatorname{erfc}$ oznacza dopełniającą funkcję błędu (ang.
+\emph{complementary error function}):
+%
+\begin{equation}
+  \operatorname{erfc}(x) = \frac{2}{\sqrt{\pi}}\int_{x}^{\infty} e^{-t^2}\,dt .
+  \label{eq:erfc}
+\end{equation}
+%
+Jest to standardowa funkcja specjalna, dostępna w bibliotekach numerycznych
+większości języków programowania. Jej związek z rozkładem normalnym jest
+taki, że dla zmiennej $Y$ o standardowym rozkładzie normalnym
+$P(|Y| \ge z) = \operatorname{erfc}(z/\sqrt{2})$. Wartość $p$ w wyrażeniu
+\eqref{eq:monobit} jest więc po prostu prawdopodobieństwem, że w idealnym
+źródle suma ciągu odchyli się od zera co najmniej tak bardzo jak w badanej
+próbce, czyli dwustronnym ogonem rozkładu normalnego.
+
 Odchylenie standardowe estymatora $\hat{p}$ wynosi $1/(2\sqrt{N})$, co
-wyznacza rozdzielczość pomiaru: przy $N = 10^6$ bitów niepewność oszacowania
+wyznacza rozdzielczość pomiaru. Przy $N = 10^6$ bitów niepewność oszacowania
 obciążenia jest rzędu $5\cdot 10^{-4}$, a obciążenia mniejsze od tej wartości
 nie są odróżnialne od fluktuacji statystycznej. Ma to znaczenie przy
-porównywaniu obciążeń poszczególnych kanałów generatora - różnica między
-nimi jest istotna tylko wtedy, gdy przekracza niepewność wynikającą z
-długości rekordu.
+porównywaniu obciążeń poszczególnych kanałów generatora, ponieważ różnica
+między nimi jest istotna tylko wtedy, gdy przekracza niepewność wynikającą
+z długości rekordu.
 
 Powiązanie z miarami entropii jest bezpośrednie: podstawienie $\hat{p}$ do
 wzorów \eqref{eq:shannon} i \eqref{eq:minentropia} daje estymatory entropii
 Shannona i min-entropii \emph{przy założeniu niezależności bitów}.
-Oszacowania te stanowią górne ograniczenie faktycznej entropii strumienia
-- każda pamięć źródła może je tylko obniżyć - i dlatego wymagają
+Oszacowania te stanowią górne ograniczenie faktycznej entropii strumienia,
+ponieważ każda pamięć źródła może je tylko obniżyć, i dlatego wymagają
 uzupełnienia analizą korelacji.
 
 \section{Analiza zależności czasowych: autokorelacja}
@@ -299,42 +366,106 @@ współczynnik autokorelacji dla opóźnienia (przesunięcia) $\tau$:
   \label{eq:autokorelacja}
 \end{equation}
 %
-Dla źródła i.i.d. i dużego $N$ estymator $r(\tau)$ ma rozkład w przybliżeniu
-normalny o zerowej średniej i odchyleniu standardowym $1/\sqrt{N}$, skąd
-przedział ufności na poziomie $1-\alpha$ ma postać
+Współczynnik $r(\tau)$ obliczony z ciągu o skończonej długości jest sam
+zmienną losową. Nawet dla źródła idealnego, w którym bity są niezależne, nie
+przyjmie dokładnie wartości zero, lecz będzie wahał się wokół zera. Przy
+prawdziwości hipotezy zerowej \eqref{eq:h0} i dużym $N$ rozkład $r(\tau)$ jest
+w przybliżeniu normalny, o zerowej średniej i odchyleniu standardowym
+$1/\sqrt{N}$. Pozwala to wyznaczyć przedział akceptacji, czyli zakres wartości,
+w którym z prawdopodobieństwem $1-\alpha$ znajdzie się współczynnik źródła
+idealnego:
 %
 \begin{equation}
   |r(\tau)| \le \frac{z_{1-\alpha/2}}{\sqrt{N}} ,
   \label{eq:ci-autokorelacja}
 \end{equation}
 %
-co dla $\alpha = 0{,}05$ daje granicę $\approx 1{,}96/\sqrt{N}$. Wartości
-przekraczające ten próg wskazują na obecność zależności o danym opóźnieniu.
+gdzie $z_{1-\alpha/2}$ jest kwantylem standardowego rozkładu normalnego. Dla
+$\alpha = 0{,}05$ granica wynosi $\approx 1{,}96/\sqrt{N}$, czyli około
+$6\cdot 10^{-4}$ dla $N = 10\,485\,760$. Wartość $r(\tau)$ przekraczająca ten
+próg jest zbyt duża, aby tłumaczyć ją samym wahaniem losowym, i wskazuje na
+zależność między bitami odległymi o $\tau$. Ponieważ sprawdza się wiele
+opóźnień jednocześnie, około $\alpha\,\tau_{\max}$ z nich przekroczy granicę
+nawet dla źródła idealnego, zgodnie z drugim zastrzeżeniem z sekcji
+o testowaniu hipotez.
 
 Interpretacja przebiegu $r(\tau)$ pozwala rozróżnić kilka typów defektu
 źródła fizycznego:
 
 \begin{itemize}
-  \item \textbf{pojedynczy pik przy $\tau = 1$} - pamięć krótkozasięgowa,
+  \item \textbf{pojedynczy pik przy $\tau = 1$}: pamięć krótkozasięgowa,
         typowa dla zbyt szybkiego próbkowania względem czasu relaksacji
-        źródła; kolejne próbki nie są od siebie niezależne;
-  \item \textbf{składowa periodyczna} $r(\tau) \sim \cos(2\pi\tau/T)$ -
+        źródła. Kolejne próbki nie są wtedy od siebie niezależne.
+  \item \textbf{składowa periodyczna} $r(\tau) \sim \cos(2\pi\tau/T)$:
         wskazuje na sprzężenie z sygnałem okresowym (zegar, zasilanie,
         zakłócenie zewnętrzne) i jest najpoważniejszym defektem, gdyż
-        oznacza deterministyczny wkład do strumienia;
-  \item \textbf{wykładniczy zanik} $r(\tau) \sim e^{-\tau/\tau_c}$ -
-        pamięć o skończonym czasie korelacji $\tau_c$; sugeruje decymację
-        strumienia z krokiem większym niż $\tau_c$;
-  \item \textbf{brak struktury w granicach} \eqref{eq:ci-autokorelacja} -
+        oznacza deterministyczny wkład do strumienia.
+  \item \textbf{wykładniczy zanik} $r(\tau) \sim e^{-\tau/\tau_c}$:
+        pamięć o skończonym czasie korelacji $\tau_c$. Sugeruje to decymację
+        strumienia z krokiem większym niż $\tau_c$.
+  \item \textbf{brak struktury w granicach} \eqref{eq:ci-autokorelacja}:
         brak podstaw do odrzucenia niezależności dla badanego zakresu
         opóźnień.
 \end{itemize}
 
-Należy podkreślić, że zerowa autokorelacja nie implikuje niezależności:
-$r(\tau)$ mierzy wyłącznie zależność liniową, a wykrycie zależności
-wyższego rzędu wymaga analizy rozkładu słów wielobitowych. Przy badaniu
-$\tau_{\max}$ opóźnień jednocześnie obowiązuje przy tym korekta na
-wielokrotne testowanie omówiona w podrozdziale~\ref{sec:aparat-hipotez}.
+Należy podkreślić, że zerowa autokorelacja nie implikuje niezależności,
+ponieważ $r(\tau)$ mierzy wyłącznie zależność liniową. Wykrycie zależności
+wyższego rzędu wymaga analizy rozkładu słów wielobitowych.
+
+\section{Analiza słów wielobitowych i mapy dwuwymiarowe}
+
+Uogólnieniem analizy pojedynczych bitów jest badanie rozkładu słów
+$k$-bitowych. Grupując strumień w słowa $w_j \in \{0,\dots,2^k-1\}$ i
+zestawiając liczby ich wystąpień $O_m$ z wartością oczekiwaną
+$E = M/2^k$ (gdzie $M$ jest liczbą słów), otrzymuje się statystykę
+%
+\begin{equation}
+  \chi^2 = \sum_{m=0}^{2^k-1} \frac{(O_m - E)^2}{E}
+  \;\sim\; \chi^2_{2^k-1},
+  \label{eq:chi2-slowa}
+\end{equation}
+%
+która pozwala testować jednostajność rozkładu słów (test serii, w literaturze
+określany też jako \emph{serial test} lub \emph{poker test}). Bezpośrednie
+oszacowanie entropii z częstości słów,
+$\hat{H} = -\sum_m \hat{q}_m \log_2 \hat{q}_m$, jest obciążone w dół
+i wymaga korekty Millera-Madowa \cite{miller1955} rzędu $(2^k-1)/(2M\ln 2)$.
+Z tego względu wiarygodna estymacja wymaga $M \gg 2^k$, co ogranicza
+praktycznie osiągalne $k$.
+
+Uzupełnieniem analizy liczbowej jest reprezentacja graficzna w postaci
+\textbf{mapy dwuwymiarowej}, konstruowanej przez naniesienie na płaszczyznę
+par kolejnych słów
+%
+\begin{equation}
+  \big(w_j,\, w_{j+d}\big), \qquad j = 1,\dots,M-d,
+  \label{eq:mapa2d}
+\end{equation}
+%
+gdzie $d$ jest przyjętym opóźnieniem. Metoda ta jest odpowiednikiem
+rekonstrukcji przestrzeni fazowej metodą opóźnień czasowych, stosowanej
+w analizie układów dynamicznych. Dla źródła idealnego punkty wypełniają
+kwadrat $[0,2^k)^2$ równomiernie, a dla źródła zawierającego składową
+deterministyczną układają się w struktury geometryczne. Wartość diagnostyczna
+map wynika stąd, że ujawniają one zależności \emph{nieliniowe}, wobec których
+funkcja autokorelacji pozostaje ślepa. Ich typowe wzorce mają bezpośrednią
+interpretację układową:
+
+\begin{itemize}
+  \item \textbf{linie ukośne}: zależność funkcyjna między słowami
+        odległymi o $d$, czyli deterministyczne odwzorowanie stanu.
+  \item \textbf{prążki poziome lub pionowe}: niejednorodność rozkładu
+        brzegowego słów (uprzywilejowane wartości), wykrywalna również
+        testem \eqref{eq:chi2-slowa}.
+  \item \textbf{zagęszczenie wokół przekątnej}: dodatnia korelacja
+        kolejnych słów, odpowiadająca pamięci źródła.
+  \item \textbf{regularna krata}: okresowość strumienia, wskazująca na
+        skończony i krótki cykl efektywny.
+\end{itemize}
+
+Ocena wzrokowa mapy stanowi wstępny etap diagnostyki. Sformalizowaniem tej
+samej informacji jest omawiany wyżej test $\chi^2$ dla par słów, o liczbie
+stopni swobody $2^{2k}-1$.
 
 \section{Analiza słów wielobitowych i mapy dwuwymiarowe}
 
@@ -440,40 +571,3 @@ stosuje się w zamian ekstraktory kryptograficzne (uniwersalne funkcje
 haszujące, konstrukcje zgodne z SP 800-90C), które przy poprawnie
 oszacowanej min-entropii wejścia gwarantują nieodróżnialność wyjścia od
 ciągu idealnego z zadanym zapasem bezpieczeństwa.
-
-\section{Standaryzowane pakiety testów}
-
-Opisane wyżej testy stanowią rdzeń analizy własnej, prowadzonej z pełną
-kontrolą nad parametrami pomiaru. Ich uzupełnieniem są standaryzowane
-pakiety, pozwalające na porównanie wyników z literaturą:
-
-\begin{itemize}
-  \item \textbf{NIST SP 800-22} \cite{rukhin2010sp80022} - 15 testów
-        obejmujących częstość, serie, rangę macierzy, transformatę Fouriera,
-        złożoność liniową, entropię przybliżoną i inne; przeznaczony do
-        oceny ciągów rzędu $10^6$ bitów i wyżej, z analizą rozkładu
-        wartości $p$ dla wielu podciągów;
-  \item \textbf{NIST SP 800-90B} \cite{turan2018sp80090b} - nie pakiet
-        testów zgodności, lecz zestaw estymatorów min-entropii (ścieżka
-        i.i.d. oraz ścieżka non-i.i.d., w której przyjmuje się minimum
-        z dziesięciu estymatorów, m.in. kolizyjnego, kompresyjnego,
-        markowskiego i opartych na predykcji);
-  \item \textbf{Dieharder} oraz \textbf{TestU01} \cite{lecuyer2007testu01}
-        --- rozbudowane baterie testów (w tym \emph{BigCrush}) o istotnie
-        wyższej mocy, wymagające jednak strumieni rzędu $10^{11}$ bitów,
-        co dla generatorów sprzętowych o umiarkowanej przepustowości bywa
-        praktycznie nieosiągalne;
-  \item \textbf{AIS-31} \cite{killmann2011ais31} - procedury T0-T8
-        stosowane w certyfikacji europejskiej, obejmujące zarówno strumień
-        surowy, jak i wyjściowy, wraz z wymaganiem istnienia
-        stochastycznego modelu źródła.
-\end{itemize}
-
-Podział ról między analizą własną a pakietami standaryzowanymi jest zatem
-następujący: testy dedykowane (obciążenie, autokorelacja, mapy 2D)
-lokalizują \emph{przyczynę} defektu i pozwalają powiązać ją z parametrami
-układu, natomiast pakiety standaryzowane orzekają o \emph{globalnej}
-zgodności strumienia z modelem idealnym. Żadna z tych metod nie zastępuje
-oszacowania min-entropii, która - zgodnie z porządkiem
-\eqref{eq:porzadek} - pozostaje ostateczną miarą siły kryptograficznej
-generatora.

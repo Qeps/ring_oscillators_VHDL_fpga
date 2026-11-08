@@ -729,14 +729,14 @@ Przebieg współczynnika autokorelacji w funkcji opóźnienia przedstawiono na
 rysunku~\ref{fig:autokorelacja_bitstream}, natomiast dokładne wartości liczbowe zestawiono
 w tabeli~\ref{tab:autokorelacja_wyniki}.
 
-\begin{figure}[htbp]
+\begin{figure}[ht]
     \centering
     \includegraphics[width=0.9\textwidth]{gfx/no_wh_ac.png}
     \caption{Autokorelacja badanego strumienia bitów dla opóźnień od 0 do 15}
     \label{fig:autokorelacja_bitstream}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[ht]
     \centering
     \caption{Wartości współczynników autokorelacji dla badanego strumienia bitów}
     \label{tab:autokorelacja_wyniki}
@@ -1703,17 +1703,4 @@ Przy formułowaniu powyższych wniosków należy uwzględnić dwa ograniczenia p
 metodyki. Przejście od konfiguracji drugiej do trzeciej obejmowało jednoczesną zmianę dwóch
 parametrów, liczby oscylatorów oraz obecności operacji XOR, w~związku z~czym nie jest
 możliwe rozdzielenie wpływu każdego z~nich na obserwowaną poprawę.
-
-Jako kierunki dalszych prac zasadne wydają się trzy zagadnienia. Pierwszym jest
-weryfikacja hipotezy o~serializacji poprzez rozdzielenie zarejestrowanego strumienia na
-podstrumienie odpowiadające poszczególnym kanałom i~zbadanie każdego z~nich osobno, co
-pozwoliłoby stwierdzić, czy zależności powstają w~pojedynczych oscylatorach, czy dopiero
-przy ich łączeniu. Drugim jest modyfikacja samego mechanizmu serializacji, na przykład
-przez wprowadzenie zmiennej kolejności zapisu kanałów do bufora, co powinno usunąć
-zależności okresowe u~ich źródła, bez ponoszenia kosztu przepustowości właściwego dla
-korekcji von Neumanna. Trzecim jest przeniesienie korekcji do struktury układu FPGA
-i~umieszczenie jej bezpośrednio przed nadajnikiem, co pozwoliłoby uzyskać strumień
-o~poprawionych właściwościach statystycznych bez konieczności przetwarzania danych po
-stronie komputera.
-
 \FloatBarrier

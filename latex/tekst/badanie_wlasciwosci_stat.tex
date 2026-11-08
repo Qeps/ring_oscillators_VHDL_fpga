@@ -1,37 +1,32 @@
 \chapter{Badanie właściwości statystycznych generatora liczb losowych}
 
-W niniejszym rozdziale przedstawiono praktyczną implementację metod statystycznych
-zastosowanych do oceny jakości strumienia bitów wygenerowanego w układzie FPGA
-z wykorzystaniem ring oscylatorów. Analiza została wykonana w języku Python na danych
-zebranych z działającego układu. Celem badań było sprawdzenie, czy wygenerowany strumień
-nie wykazuje zależności, które mogłyby świadczyć o występowaniu niepożądanych
-powiązań pomiędzy kolejnymi próbkami.
-Wyniki przedstawiono w postaci wykresów oraz tabel, co umożliwia ocenę
-wizualną, jak i dokładne porównanie wartości liczbowych.
-
 \section{Implementacja skryptów do akwizycji i analizy strumienia bitów}
 
-W ramach pracy przygotowano zestaw skryptów w języku Python, których zadaniem jest
-akwizycja danych z badanego układu oraz wykonanie podstawowych analiz statystycznych
-zarejestrowanych strumieni bitów. Przyjęte rozwiązanie ma charakter modułowy.
-Oznacza to, że część odpowiedzialna za konfigurację, wczytywanie danych, wstępne
-przetwarzanie oraz właściwą analizę została rozdzielona na kilka plików, co
-ułatwia rozwój kodu i wielokrotne powtarzanie eksperymentów.
+Do oceny jakości strumienia bitów wygenerowanego w układzie FPGA
+z wykorzystaniem oscylatorów pierścieniowych przygotowano zestaw skryptów
+w języku Python. Służą one do akwizycji danych z działającego układu oraz do
+wykonania analiz statystycznych zarejestrowanych strumieni. Celem analiz jest
+sprawdzenie, czy strumień nie wykazuje zależności, które mogłyby świadczyć
+o niepożądanych powiązaniach między kolejnymi próbkami. Wyniki przedstawiono
+w postaci wykresów oraz tabel, co umożliwia zarówno ocenę wizualną, jak
+i dokładne porównanie wartości liczbowych.
+
+Przyjęte rozwiązanie ma charakter modułowy. Część odpowiedzialna za
+konfigurację, wczytywanie danych, wstępne przetwarzanie oraz właściwą analizę
+została rozdzielona na kilka plików, co ułatwia rozwój kodu i wielokrotne
+powtarzanie eksperymentów.
 
 \subsection{Moduł parametrów konfiguracyjnych}
 
-Wspólna konfiguracja wszystkich programów została umieszczona w osobnym module
-\texttt{user\_param.py}. Takie podejście pozwala oddzielić parametry konfiguracji
-od kodu realizującego obliczenia. W praktyce oznacza to, że zmiana portu
-szeregowego, liczby pobieranych bitów, maksymalnego opóźnienia autokorelacji
-lub parametrów map dwuwymiarowych nie wymaga ingerencji w główną logikę programu.
-Z punktu widzenia pracy badawczej jest to wygodne, ponieważ umożliwia szybkie
-powtarzanie pomiarów dla różnych ustawień układu oraz porównywanie wyników
-uzyskanych w różnych konfiguracjach.
+Wspólna konfiguracja wszystkich programów znajduje się w osobnym module
+\texttt{user\_param.py}, co oddziela parametry od kodu realizującego obliczenia.
+Zmiana portu szeregowego, liczby pobieranych bitów, maksymalnego opóźnienia
+autokorelacji lub parametrów map dwuwymiarowych nie wymaga więc ingerencji
+w główną logikę programu.
 
-Na listingu~\ref{lst:user_param_python} pokazano fragment modułu konfiguracyjnego.
-Zawiera on zarówno parametry związane z transmisją UART, jak i ustawienia używane
-w kolejnych etapach analizy.
+Listing~\ref{lst:user_param_python} przedstawia fragment modułu
+konfiguracyjnego. Zawiera on zarówno parametry transmisji UART, jak i ustawienia
+używane w kolejnych etapach analizy.
 
 \begin{lstlisting}[
     language=Python,
@@ -55,177 +50,273 @@ STEP = None
 BIAS_ALPHA = 0.01
 \end{lstlisting}
 
-\subsection{Skrypt do akwizycji danych z interfejsu UART}
+Pierwsza grupa parametrów dotyczy akwizycji. Parametry \texttt{UART\_PORT}
+i \texttt{UART\_BAUD} wskazują port szeregowy oraz prędkość transmisji, która
+musi być zgodna z wartością ustawioną w nadajniku w układzie FPGA.
+Parametr \texttt{UART\_TIMEOUT\_S} jest limitem czasu oczekiwania na dane,
+a \texttt{READ\_CHUNK\_SIZE} określa rozmiar porcji odczytywanej z portu
+w jednym wywołaniu. Parametr \texttt{UART\_BIT\_ORDER} wskazuje kolejność, w jakiej
+bity każdego odebranego bajtu są rozpakowywane do strumienia bitów, i ma wpływ na
+wyniki analiz zależności czasowych, ponieważ zmienia sąsiedztwo bitów w strumieniu.
 
-Pierwszym etapem procesu badawczego było zarejestrowanie strumienia bitów
-generowanego przez układ sprzętowy. W tym celu opracowano skrypt
-\texttt{uart\_capture.py}, którego zadaniem jest otwarcie portu szeregowego,
-odbiór kolejnych porcji danych, konwersja bajtów do postaci bitowej oraz zapis
-wyniku do pliku tekstowego.
+Liczba rejestrowanych bitów \texttt{CAPTURE\_BITS} wynosi $10\,485\,760$,
+czyli $10\cdot 2^{20}$, co odpowiada $1\,310\,720$ bajtom. Przy prędkości
+9600~bodów, gdzie bajt zajmuje na łączu dziesięć bitów, a więc przesyłane jest
+około 960 bajtów na sekundę, pobranie takiej serii trwa nie krócej niż około
+23 minut. Długość serii wyznacza też rozdzielczość statystyczną badań, bo
+niepewność oszacowania częstości jedynek maleje wraz z pierwiastkiem z liczby
+bitów.
 
-Program pobiera dane w blokach o zadanym rozmiarze, a następnie rozpakowuje każdy odebrany
-bajt do ośmiu bitów. Uwzględniono również możliwość wyboru kolejności bitów w bajcie,
-co ma znaczenie przy współpracy z różnymi implementacjami sprzętowymi. Niezgodność
-przyjętej konwencji z kolejnością wystawiania bitów przez nadajnik nie zmienia wprawdzie
-zawartości informacyjnej strumienia, wprowadza jednak deterministyczną permutację pozycji
-bitowych, która mogłaby zniekształcić wynik testów badających zależności lokalne.
+Druga grupa parametrów steruje analizą. Parametr \texttt{MAX\_LAG} określa
+największe opóźnienie, dla którego liczona jest autokorelacja,
+a \texttt{BIAS\_ALPHA} jest poziomem istotności testu odchylenia rozkładu bitów
+i przyjęto go na poziomie 0,01, takim jak w pakiecie SP 800-22. Parametry
+\texttt{MAP2D\_WORD\_SIZES} i \texttt{MAP2D\_TAUS} definiują odpowiednio długości
+słów oraz opóźnienia, dla których tworzone są mapy dwuwymiarowe.
 
-Fragment implementacji przedstawiono w listingu\ref{lst:uart_capture_python}.
-Widoczna funkcja realizuje odbiór kolejnych porcji danych i uzupełnianie tablicy
-wynikowej aż do osiągnięcia zadanej długości strumienia. Tablica wynikowa alokowana jest
-jednorazowo, przed rozpoczęciem odbioru, o docelowym rozmiarze \texttt{target\_bits},
-dzięki czemu uniknięto wielokrotnej realokacji pamięci przy kolejnych iteracjach pętli.
-Przy seriach rzędu milionów bitów ma to wymierny wpływ na czas akwizycji. Kolejne
-fragmenty zapisywane są bezpośrednio w wyznaczonym wycinku tablicy, a zmienna
-\texttt{collected} pełni funkcję wskaźnika bieżącej pozycji zapisu.
+\subsection{Akwizycja danych z interfejsu UART}
 
-Istotnym elementem funkcji jest obsługa sytuacji, w których wywołanie \texttt{ser.read()}
-zwraca pustą odpowiedź. Zdarza się to po upływie zdefiniowanego limitu czasu oczekiwania,
-gdy generator chwilowo nie dostarcza danych, na przykład wtedy, gdy bufor modułu
-ekstrakcji nie zgromadził jeszcze pełnego bajtu. Pusty odczyt nie jest wówczas traktowany
-jako błąd, lecz powoduje jedynie ponowienie próby, co pozwala prowadzić akwizycję
-niezależnie od zmiennej w czasie wydajności źródła entropii. Analogicznie pomijane są
-porcje, z których dekoder nie zwrócił żadnych bitów.
+Pierwszym etapem badań jest zarejestrowanie strumienia bitów wytwarzanego
+przez układ. Zajmuje się tym skrypt \texttt{uart\_capture.py}, który otwiera
+port szeregowy z parametrami pobranymi z modułu \texttt{user\_param.py},
+odbiera dane porcjami i zapisuje serię o zadanej długości do pliku tekstowego,
+w którym kolejne znaki \texttt{0} i \texttt{1} odpowiadają kolejnym bitom.
+Poniżej omówiono dwa fragmenty realizujące właściwą logikę. Pominięto
+w nich sprawdzanie poprawności konfiguracji, raportowanie postępu i obsługę
+pliku.
 
-Ostatni odebrany blok jest z reguły dłuższy niż liczba bitów pozostających do zebrania,
-ponieważ rozmiar bloku nie musi być dzielnikiem zadanej długości serii. Zastosowanie
-zmiennych \texttt{remaining} i \texttt{take} zapewnia przycięcie nadmiarowej części
-i zakończenie akwizycji dokładnie na zadanej liczbie bitów. Ma to znaczenie dla
-poprawności dalszej analizy, ponieważ część testów pakietu NIST wymaga strumienia
-o ściśle określonej długości, a seria dłuższa od deklarowanej mogłaby prowadzić do
-niejednoznacznego podziału danych na bloki.
-
-\begin{lstlisting}[
+\lstdefinestyle{pycode}{
     language=Python,
-    caption={Fragment skryptu \texttt{uart\_capture.py} odpowiedzialny za akwizycję bitów},
-    label={lst:uart_capture_python},
     basicstyle=\ttfamily\small,
     breaklines=true,
     frame=single
-]
-def capture_one_series(ser: serial.Serial, target_bits: int, 
-    chunk_size: int, bit_order: str, 
-    progress_every_percent: int,) -> np.ndarray:
+}
 
-    bits = np.empty(target_bits, dtype=np.uint8)
-    collected = 0
+\Needspace{10\baselineskip}
+\begin{lstlisting}[style=pycode,
+    caption={Rozpakowanie bajtów do bitów (\texttt{uart\_capture.py})},
+    label={lst:uart_decode}]
+def decode_uart_chunk_to_bits(raw: bytes, bit_order: str) -> np.ndarray:
+    if not raw:
+        return np.empty(0, dtype=np.uint8)
 
-    while collected < target_bits:
-        raw = ser.read(chunk_size)
-        if not raw:
-            continue
-
-        chunk_bits = decode_uart_chunk_to_bits(raw=raw, 
-                     bit_order=bit_order)
-        if chunk_bits.size == 0:
-            continue
-
-        remaining = target_bits - collected
-        take = min(remaining, int(chunk_bits.size))
-        bits[collected : collected + take] = chunk_bits[:take]
-        collected += take
-
-    return bits
+    data = np.frombuffer(raw, dtype=np.uint8)
+    unpack_order = "big" if bit_order == "msb" else "little"
+    return np.unpackbits(data, bitorder=unpack_order)
 \end{lstlisting}
 
-\subsection{Skrypt wybielający z wykorzystaniem metody Von Neumanna}
+Listing~\ref{lst:uart_decode} przedstawia funkcję zamieniającą odebrany blok
+bajtów na tablicę bitów. Bajty są interpretowane jako tablica liczb
+ośmiobitowych, a funkcja \texttt{np.unpackbits} rozwija każdą z nich na osiem
+wartości 0 lub 1. Pusty blok daje pustą tablicę. Ponieważ port zwraca wyłącznie
+całe bajty, każdy blok można rozpakować niezależnie, a połączenie wyników jest
+równoważne rozpakowaniu całego strumienia naraz.
 
-Po rejestracji danych zastosowano dodatkowy etap wstępnego przetwarzania,
-wybrano wybielanie strumienia bitów metodą Von Neumanna. Celem tego
-algorytmu jest ograniczenie wpływu biasu, czyli nierównowagi pomiędzy liczbą
-zer i jedynek, bez potrzeby stosowania bardziej złożonych metod korekcji.
+Parametr \texttt{bit\_order} wybiera kolejność bitów w obrębie bajtu.
+Wartość \texttt{msb} oznacza, że pierwszym bitem jest bit najbardziej
+znaczący, a \texttt{lsb}, że najmniej znaczący. Wybór nie zmienia liczby zer
+i jedynek, więc nie wpływa na test monobitowy, ale zmienia sąsiedztwo bitów
+w strumieniu, a tym samym autokorelację i mapy słów. W module ekstrakcji
+entropii najwcześniej wyekstrahowany bit trafia na najmniej znaczącą pozycję
+bajtu, więc odczyt \texttt{lsb} odtwarza kolejność ekstrakcji, a \texttt{msb}
+odwraca ją w obrębie każdego bajtu.
 
-Strumień wejściowy dzielony jest na kolejne
-pary bitów. Jeżeli w parze wystąpią dwa identyczne bity, para jest odrzucana.
-Jeżeli bity są różne, do strumienia wyjściowego przepisywany jest pierwszy bit
-z tej pary. W efekcie otrzymywany jest nowy ciąg o lepszych właściwościach
-statystycznych, chociaż zazwyczaj krótszy od ciągu wejściowego. Skuteczność metody
-opiera się na założeniu, że kolejne bity strumienia są statystycznie niezależne,
-a jedynym jego defektem jest stałe odchylenie prawdopodobieństwa. Przy spełnieniu
-tego warunku obie różne pary występują z jednakowym prawdopodobieństwem niezależnie
-od wartości biasu, co gwarantuje idealną równowagę strumienia wyjściowego. Ceną
-jest redukcja długości ciągu, w przypadku źródła nieobciążonego do około jednej
-czwartej liczby bitów wejściowych, a dla źródła silnie odchylonego jeszcze wyraźniejsza.
-Z punktu widzenia pracy badawczej rozwiązanie to jest użyteczne, ponieważ pozwala
-porównać wyniki analizy przed i po wybielaniu danych. Implementację tej operacji
-przedstawiono na listingu\ref{lst:von_neumann_python}.
+\Needspace{18\baselineskip}
+\begin{lstlisting}[style=pycode,
+    caption={Odbiór serii o zadanej długości (\texttt{uart\_capture.py})},
+    label={lst:uart_capture_loop}]
+bits = np.empty(target_bits, dtype=np.uint8)
+collected = 0
 
-\begin{lstlisting}[
-    language=Python,
-    caption={Fragment skryptu \texttt{von\_neumann.py} realizującego wybielanie bitów},
-    label={lst:von_neumann_python},
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single
-]
+while collected < target_bits:
+    raw = ser.read(chunk_size)
+    if not raw:
+        continue
+
+    chunk_bits = decode_uart_chunk_to_bits(raw=raw, bit_order=bit_order)
+    if chunk_bits.size == 0:
+        continue
+
+    remaining = target_bits - collected
+    take = min(remaining, int(chunk_bits.size))
+    bits[collected : collected + take] = chunk_bits[:take]
+    collected += take
+\end{lstlisting}
+
+Listing~\ref{lst:uart_capture_loop} zawiera pętlę odbioru z funkcji
+\texttt{capture\_one\_series}. Tablica wynikowa \texttt{bits} jest alokowana
+jednorazowo na docelową liczbę bitów, a zmienna \texttt{collected} wskazuje
+pozycję, od której zapisywany jest kolejny fragment.
+
+Wywołanie \texttt{ser.read(chunk\_size)} czeka na podaną liczbę bajtów, ale
+nie dłużej niż przez limit czasu \texttt{UART\_TIMEOUT\_S}, a po jego upływie
+zwraca to, co udało się odebrać. Pusty wynik oznacza, że w tym czasie nie
+nadeszły żadne dane. Nie jest to traktowane jako błąd, lecz powoduje ponowienie
+próby, co pozwala prowadzić akwizycję niezależnie od chwilowej wydajności
+źródła entropii.
+
+Ostatni odebrany blok jest z reguły dłuższy niż liczba bitów, które pozostały
+do zebrania, ponieważ rozmiar bloku nie musi być dzielnikiem długości serii.
+Zmienna \texttt{remaining} określa, ile bitów brakuje, a \texttt{take} jest
+mniejszą z dwóch liczb: brakującej i dostępnej w bloku. Nadmiarowa część bloku
+jest odrzucana, więc akwizycja kończy się dokładnie na zadanej liczbie bitów.
+Jednakowa długość każdej serii ułatwia porównywanie konfiguracji generatora,
+ponieważ niepewność oszacowań statystycznych zależy od liczby bitów.
+
+\subsection{Wybielanie strumienia metodą von Neumanna}
+
+Skrypt \texttt{von\_neumann.py} realizuje na komputerze algorytm kondycjonowania
+opisany odwzorowaniem \eqref{eq:von-neumann} \cite{vonneumann1951}. Wczytuje
+serie bitów z pliku, przetwarza każdą z nich osobno i zapisuje wynik w takim
+samym formacie, więc strumień surowy i wybielony można badać tymi samymi
+narzędziami. Wybielanie wykonywane jest na danych już zarejestrowanych, a nie
+w strukturze układu FPGA. Umożliwia to wielokrotną analizę tej samej serii
+oraz bezpośrednie porównanie obu postaci strumienia.
+
+Algorytm dzieli strumień na rozłączne pary kolejnych bitów. Parę o jednakowych
+bitach odrzuca, a z pary o różnych bitach przepisuje pierwszy bit, czyli
+\texttt{01} daje \texttt{0}, a \texttt{10} daje \texttt{1}. Równość
+prawdopodobieństw obu różnych par, a tym samym symetria strumienia
+wyjściowego, wynika z założenia, że bity są niezależne i mają jednakowe
+prawdopodobieństwo jedynki $p$. Założenie to jest słabsze od hipotezy
+\eqref{eq:h0}, ponieważ nie wymaga $p = 1/2$. Ceną jest skrócenie ciągu,
+które opisuje wydajność \eqref{eq:wydajnosc-vn}. Dla serii o długości
+$N = 10\,485\,760$ bitów i źródła zbliżonego do nieobciążonego daje ona około
+$2{,}6\cdot 10^{6}$ bitów wyjściowych.
+
+Skrócenie ciągu ma konsekwencje dla rozdzielczości pomiaru. Najmniejsze
+wykrywalne obciążenie w teście \eqref{eq:monobit} oraz granica
+\eqref{eq:ci-autokorelacja} maleją z długością jak $1/\sqrt{N}$. Czterokrotnie
+krótszy ciąg wyjściowy oznacza więc dwukrotnie szerszy przedział akceptacji,
+na przykład około $1{,}2\cdot 10^{-3}$ zamiast $6\cdot 10^{-4}$ dla
+współczynnika autokorelacji. Wyniki przed i po wybielaniu trzeba zatem
+porównywać z uwzględnieniem różnej długości serii.
+
+Metoda usuwa wyłącznie odchylenie rozkładu brzegowego, czyli obciążenie
+\eqref{eq:bias}, i tylko przy spełnionym założeniu niezależności. Nie usuwa
+zależności między bitami. Skutek wybielania ocenia się więc doświadczalnie,
+porównując przed i po obciążenie $\varepsilon$, współczynniki autokorelacji
+\eqref{eq:autokorelacja} oraz rozkład słów wielobitowych
+\eqref{eq:chi2-slowa}. Dodatkową wskazówkę daje udział zachowanych par. Dla
+bitów niezależnych powinien wynosić około $2\hat{p}(1-\hat{p})$, a wyraźnie
+mniejszy wskazuje, że sąsiednie bity częściej się zgadzają, niż wynikałoby
+z samego obciążenia.
+
+\Needspace{10\baselineskip}
+\begin{lstlisting}[style=pycode,
+    caption={Wyodrębnienie par bitów (\texttt{von\_neumann.py})},
+    label={lst:vn_pairs}]
 def von_neumann_whiten(bits: np.ndarray) -> np.ndarray:
     pair_count = len(bits) // 2
     if pair_count == 0:
         return np.empty(0, dtype=np.uint8)
 
     pairs = bits[: 2 * pair_count].reshape(pair_count, 2)
+    # ... wybor par w kolejnym listingu
+\end{lstlisting}
+
+Listing~\ref{lst:vn_pairs} przedstawia pierwszą część funkcji, w której
+strumień jest dzielony na pary. Liczba pełnych par wynika z dzielenia
+całkowitego długości strumienia przez dwa. Przy nieparzystej liczbie bitów
+ostatni bit jest pomijany, ponieważ nie tworzy kompletnej pary, a strumień
+krótszy od dwóch bitów daje pusty wynik. Operacja \texttt{reshape}
+przekształca jednowymiarową tablicę w macierz o dwóch kolumnach, w której każdy
+wiersz odpowiada jednej parze. Dane nie są przy tym kopiowane, zmienia się
+tylko sposób ich indeksowania.
+
+\Needspace{8\baselineskip}
+\begin{lstlisting}[style=pycode,
+    caption={Wybór par o różnych bitach (\texttt{von\_neumann.py})},
+    label={lst:vn_select}]
+    # ... pary z poprzedniego listingu
     different = pairs[:, 0] != pairs[:, 1]
 
     return pairs[different, 0].astype(np.uint8, copy=False)
 \end{lstlisting}
 
-Implementację zrealizowano w postaci wektorowej, bez jawnej pętli po parach bitów.
-Liczba pełnych par wyznaczana jest przez dzielenie całkowite długości strumienia,
-a przy nieparzystej liczbie bitów ostatni z nich jest pomijany, ponieważ nie tworzy
-kompletnej pary. Operacja \texttt{reshape} przekształca jednowymiarową tablicę bitów
-w macierz o dwóch kolumnach, w której każdy wiersz odpowiada jednej analizowanej parze.
-Porównanie obu kolumn daje logiczną maskę wskazującą pary o różnych wartościach,
-która następnie służy do wybrania z pierwszej kolumny wyłącznie bitów spełniających
-warunek zachowania. Takie podejście pozwala przetworzyć całą serię pomiarową
-w kilku operacjach na tablicach, co przy strumieniach rzędu milionów bitów jest
-zauważalnie szybsze od przetwarzania iteracyjnego.
+Listing~\ref{lst:vn_select} zawiera drugą część funkcji. Porównanie obu kolumn
+daje maskę logiczną, w której wartość prawdziwa oznacza parę o różnych bitach.
+Maska służy do wybrania z pierwszej kolumny tylko tych bitów, które mają
+zostać zachowane. Wybór pierwszego bitu realizuje odwzorowanie
+\eqref{eq:von-neumann}, ponieważ dla pary \texttt{01} pierwszym bitem jest
+\texttt{0}, a dla \texttt{10} jest \texttt{1}. Całość wykonuje się w kilku
+operacjach na tablicach, bez jawnej pętli po parach, co przy seriach rzędu
+milionów bitów jest szybsze od przetwarzania iteracyjnego.
 
-Wybielanie realizowane jest po stronie komputera, na danych już zarejestrowanych,
-a nie w strukturze układu FPGA. Rozwiązanie takie przyjęto celowo, ponieważ umożliwia
-ono wielokrotną analizę tej samej serii pomiarowej przy różnych ustawieniach przetwarzania
-oraz bezpośrednie porównanie strumienia surowego z wybielonym. Warunek zwracający
-tablicę pustą dla strumienia krótszego od dwóch bitów zabezpiecza dalsze etapy analizy
-przed błędem przy przetwarzaniu niekompletnych serii.
+\subsection{Wyznaczanie autokorelacji}
 
-\subsection{Skrypt do wyznaczania autokorelacji}
+Skrypt \texttt{autocorrelation.py} ocenia zależności między bitami oddzielonymi
+zadanym opóźnieniem, czyli w praktyce wyznacza funkcję opisaną wzorem
+\eqref{eq:autokorelacja}. Dla generatora bez pamięci współczynniki dla
+opóźnień większych od zera powinny mieścić się w przedziale
+\eqref{eq:ci-autokorelacja}. Opóźnienia obejmują zakres od zera do wartości
+parametru \texttt{MAX\_LAG}, który w przyjętej konfiguracji wynosi 15. Dla
+każdej serii skrypt zapisuje wykres słupkowy oraz tabelę wartości. Na wykresie
+oprócz pełnego zakresu pokazano powiększenie bez opóźnienia zerowego, ponieważ
+wartość równa jedności przesłoniłaby skalą pozostałe, o wiele mniejsze
+współczynniki.
 
-Skrypt \texttt{autocorrelation.py}, służy do oceny zależności pomiędzy
-bitami oddzielonymi określonym opóźnieniem. Badanie autokorelacji jest istotne,
-ponieważ pozwala sprawdzić, czy kolejne próbki są od siebie niezależne.
-W idealnym generatorze liczb losowych wartości autokorelacji dla opóźnień
-większych od zera powinny być bliskie zeru.
+Strumień wejściowy jest najpierw przekształcany z postaci $0/1$ do postaci
+$-1/+1$, czyli według wzoru
+%
+\begin{equation}
+  x_i = 2b_i - 1 ,
+  \label{eq:ac-przeksztalcenie}
+\end{equation}
+%
+takiego samego jak w sumie $S_N$ w teście monobitowym \eqref{eq:monobit}.
+Dla każdego opóźnienia $\tau$ skrypt wyznacza średnią iloczynów
+%
+\begin{equation}
+  R(\tau) = \frac{1}{N-\tau}\sum_{i=1}^{N-\tau} x_i\, x_{i+\tau} .
+  \label{eq:ac-kod}
+\end{equation}
+%
+Przy kodowaniu $-1/+1$ iloczyn jest dodatni dla zgodnych bitów i ujemny dla
+niezgodnych, więc średnia wprost wyraża siłę i znak zależności. Przy kodowaniu
+$0/1$ średnia iloczynów byłaby równa częstości par jedynek, a otrzymanie
+miary zależności wymagałoby odjęcia od niej kwadratu średniej.
 
-W analizowanym rozwiązaniu strumień wejściowy w postaci \texttt{0}/\texttt{1}
-jest najpierw przekształcany do postaci \texttt{-1}/\texttt{+1}. Zabieg ten sprowadza
-wartość oczekiwaną strumienia nieobciążonego do zera, dzięki czemu iloczyn dwóch
-próbek przyjmuje wartość dodatnią przy zgodności bitów i ujemną przy ich
-niezgodności, a średnia z takich iloczynów wprost wyraża siłę i znak zależności.
-Przy oryginalnym kodowaniu zerojedynkowym iloczyn byłby niezerowy wyłącznie dla par
-jedynek, co czyniłoby miarę nieczułą na znaczną część możliwych zależności. Następnie
-dla każdego opóźnienia wyznaczana jest średnia wartość iloczynu dwóch fragmentów
-ciągu, z których jeden jest przesunięty względem drugiego. Program realizuje
-obliczenia dla opóźnień od zera do wartości określonej przez parametr
-\texttt{MAX\_LAG}. Dodatkowo generowane są wykresy oraz tabela z obliczonymi
-wartościami, co ułatwia interpretację wyników.
+Wzór \eqref{eq:ac-kod} nie odejmuje średniej i nie normuje wariancją, więc nie
+jest identyczny z \eqref{eq:autokorelacja}. Ponieważ średnia ciągu $x_i$ wynosi
+$2\varepsilon$, gdzie $\varepsilon$ jest obciążeniem \eqref{eq:bias}, a jego
+wariancja $1-4\varepsilon^2$, zachodzi w przybliżeniu
+%
+\begin{equation}
+  R(\tau) \approx 4\varepsilon^2 + \left(1-4\varepsilon^2\right) r(\tau) .
+  \label{eq:ac-przyblizenie}
+\end{equation}
+%
+Dla małego obciążenia oba współczynniki praktycznie się pokrywają. Przy
+$\varepsilon \approx 4\cdot 10^{-4}$ przesunięcie wynosi $6\cdot 10^{-7}$,
+a dla obciążenia rzędu jednego procenta $4\cdot 10^{-4}$, co jest już
+porównywalne z granicą $6\cdot 10^{-4}$. Dla konfiguracji o większym
+obciążeniu wyniki autokorelacji trzeba więc czytać razem z oceną obciążenia.
 
-Przykładową implementację funkcji obliczającej autokorelację przedstawiono
-na listingu\ref{lst:autocorrelation_python}.
-
-\begin{lstlisting}[
-    language=Python,
-    caption={Fragment skryptu \texttt{autocorrelation.py} do wyznaczania autokorelacji},
-    label={lst:autocorrelation_python},
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single
-]
+\Needspace{12\baselineskip}
+\begin{lstlisting}[style=pycode,
+    caption={Przekształcenie strumienia do postaci $-1/+1$ (\texttt{autocorrelation.py})},
+    label={lst:ac_prepare}]
 def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
     if len(bits) < max_lag + 1:
         raise ValueError("Not enough bits for MAX_LAG.")
 
     x = bits.astype(np.int8) * 2 - 1
     ac = np.empty(max_lag + 1, dtype=np.float64)
+    # ... petla po opoznieniach w kolejnym listingu
+\end{lstlisting}
 
+Listing~\ref{lst:ac_prepare} przedstawia początek funkcji. Najpierw sprawdzane
+jest, czy ciąg jest dłuższy od największego opóźnienia, bo w przeciwnym razie
+nie powstałaby ani jedna para. Następnie bity są przekształcane według wzoru
+\eqref{eq:ac-przeksztalcenie}, a tablica wynikowa o długości
+\texttt{max\_lag+1} jest alokowana raz. Typ \texttt{int8} wystarcza, ponieważ
+\texttt{x} przyjmuje tylko wartości $\pm 1$.
+
+\Needspace{10\baselineskip}
+\begin{lstlisting}[style=pycode,
+    caption={Obliczenie współczynników dla kolejnych opóźnień (\texttt{autocorrelation.py})},
+    label={lst:ac_loop}]
     for lag in range(max_lag + 1):
         a = x[: len(x) - lag]
         b = x[lag:]
@@ -234,33 +325,35 @@ def autocorrelation(bits: np.ndarray, max_lag: int) -> np.ndarray:
     return ac
 \end{lstlisting}
 
-Dla każdego opóźnienia tworzone są dwa wycinki tego samego ciągu, przesunięte
-względem siebie o zadaną liczbę pozycji i skrócone do wspólnej długości, tak aby
-uśrednianie obejmowało wyłącznie pary o pełnym pokryciu. Wynikiem funkcji jest
-tablica o długości \texttt{MAX\_LAG+1}, w której pierwszy element odpowiada opóźnieniu
-zerowemu. Element ten z definicji przyjmuje wartość jedności, ponieważ każda próbka
-mnożona jest wówczas przez siebie samą, a wobec kodowania \texttt{-1}/\texttt{+1}
-iloczyn ten jest zawsze dodatni. Stanowi to wygodny punkt odniesienia oraz prosty
-test poprawności działania funkcji.
+Listing~\ref{lst:ac_loop} zawiera pętlę po opóźnieniach, która oblicza
+\eqref{eq:ac-kod}. Dla każdego $\tau$ tworzone są dwa wycinki tego samego
+ciągu, przesunięte względem siebie o $\tau$ pozycji i skrócone do wspólnej
+długości $N-\tau$. Uśrednianie obejmuje więc wyłącznie pary o pełnym pokryciu.
+Wycinki są widokami, a nie kopiami, a iloczyn zawiera tylko wartości $\pm 1$.
+Funkcja \texttt{np.mean} dla tablicy liczb całkowitych sumuje w typie
+\texttt{float64}, więc suma milionów składników nie przepełnia typu
+\texttt{int8}.
 
-Interpretacja pozostałych wartości wymaga uwzględnienia rozrzutu statystycznego.
-Nawet dla źródła idealnie losowego wyznaczone współczynniki nie są dokładnie zerowe,
-lecz wahają się w otoczeniu zera z odchyleniem standardowym rzędu odwrotności
-pierwiastka z liczby analizowanych par. Przy serii o długości miliona bitów oznacza
-to typowe odchylenia rzędu jednej tysięcznej, wobec czego dopiero wartości istotnie
-przekraczające ten poziom świadczą o rzeczywistej zależności między próbkami.
-W przypadku badanego generatora szczególnej uwagi wymagają opóźnienia odpowiadające
-liczbie oscylatorów oraz wielokrotności długości bajtu, ponieważ ewentualna
-periodyczność wynikająca ze stałej kolejności zapisu kanałów do bufora ujawniłaby się
-właśnie w tych miejscach.
+Element dla opóźnienia zerowego jest z definicji równy jedności, ponieważ każda
+próbka jest mnożona przez siebie, a $x_i^2 = 1$. Stanowi to punkt odniesienia
+i prosty test poprawności funkcji. Koszt obliczeń jest proporcjonalny do
+iloczynu długości strumienia i liczby opóźnień. Dla stu opóźnień i serii
+rzędu $10^7$ bitów jest to nadal kilka sekund, a bezpośrednia postać jest
+czytelniejsza i łatwiejsza do weryfikacji niż realizacja przez szybką
+transformatę Fouriera.
 
-Zastosowany algorytm ma złożoność proporcjonalną do iloczynu długości strumienia
-i maksymalnego opóźnienia, co przy dużych wartościach parametru \texttt{MAX\_LAG}
-może być kosztowne obliczeniowo. Dla rozważanych zakresów opóźnień narzut ten
-pozostaje jednak akceptowalny, a bezpośrednia postać obliczeń jest czytelniejsza
-i łatwiejsza do weryfikacji niż realizacja z użyciem szybkiej transformaty Fouriera.
+Interpretację wartości opiera się na granicy \eqref{eq:ci-autokorelacja}. Dla
+$N = 10\,485\,760$ odchylenie standardowe współczynnika wynosi
+$1/\sqrt{N} \approx 3{,}1\cdot 10^{-4}$, a granica na poziomie $\alpha = 0{,}05$
+około $6\cdot 10^{-4}$. Przy piętnastu badanych opóźnieniach średnio jedno na
+kilka serii przekroczy ją przypadkowo, więc pojedyncze przekroczenie nie
+świadczy jeszcze o zależności. Taki sam skutek ma wielokrotne testowanie
+omówione przy aparacie testowania hipotez. Wymaga uwagi opóźnienie równe $8$,
+czyli liczbie kanałów generatora i długości bajtu. Ewentualna regularność
+wynikająca ze stałej kolejności zapisu kanałów do bufora ujawniłaby się
+właśnie tam.
 
-\subsection{Skrypt do tworzenia dwuwymiarowych map opóźnień}
+\subsection{Dwuwymiarowe mapy opóźnień}
 
 Do bardziej zaawansowanej analizy zależności w danych wykorzystano skrypt
 \texttt{map2d\_analysis.py}. Jego zadaniem jest budowa dwuwymiarowych map
@@ -350,7 +443,7 @@ Zastosowanie map dwuwymiarowych było przydatne z praktycznego punktu widzenia,
 ponieważ pozwalało wykrywać nie tylko prosty bias, ale również bardziej złożone
 zależności pomiędzy kolejnymi fragmentami badanego ciągu.
 
-\subsection{Skrypt do wyznaczania odchylenia rozkładu bitów}
+\subsection{Odchylenie rozkładu bitów}
 
 Skrypt \texttt{bias.py} służy do oceny najbardziej podstawowej właściwości strumienia
 losowego, jaką jest równowaga pomiędzy liczbą zer i jedynek. Dla źródła idealnego
@@ -436,11 +529,7 @@ Przyjęta struktura odzwierciedla naturalną kolejność przetwarzania danych,
 od akwizycji, przez opcjonalne wybielanie, aż do analizy statystycznej. Rozdzielenie
 tych etapów sprawia, że pojedyncza seria pomiarowa, po jednorazowym zarejestrowaniu,
 może być poddawana wielokrotnej analizie przy różnych ustawieniach parametrów, bez
-konieczności ponownego uruchamiania układu sprzętowego. Wydzielenie parametrów
-konfiguracyjnych do osobnego modułu zapewnia ponadto, że wszystkie skrypty
-operują na jednakowych ustawieniach długości serii, kolejności bitów oraz
-zakresów analizy, co jest warunkiem porównywalności wyników uzyskanych
-w kolejnych eksperymentach.
+konieczności ponownego uruchamiania układu sprzętowego.
 
 Zastosowane miary są wobec siebie komplementarne. Analiza biasu ocenia rozkład
 wartości pojedynczych bitów, autokorelacja bada zależności między bitami
@@ -451,7 +540,7 @@ formułować wnioski na temat jakości badanego źródła entropii.
 
 \subsection{Zestawienie parametrów badanych konfiguracji}
 
-Wszystkie omówione pomiary wykonano na tej samej płytce rozwojowej i przy jednakowej
+Wszystkie dalsze pomiary wykonano na tej samej płytce rozwojowej i przy jednakowej
 długości serii pomiarowej wynoszącej $10\,485\,760$ bitów, co odpowiada dziesięciu
 mebibajtom danych. Konfiguracje różniły się liczbą użytych oscylatorów, sposobem ich
 rozmieszczenia w strukturze układu, obecnością operacji XOR na wyjściach oraz
@@ -494,51 +583,107 @@ ekstrakcji entropii doprowadzonych jest zatem w każdym przypadku osiem sygnał�
 co oznacza, że przepustowość generatora nie zależy od liczby zaimplementowanych
 oscylatorów. Warto zwrócić uwagę, że przyjęty schemat parowania zestawia zawsze łańcuch
 krótszy z łańcuchem o dwa stopnie dłuższym, a więc o najbliższej możliwej częstotliwości
-w obrębie zestawu.
+w obrębie zestawu. Schemat połączeń przedstawiono na rysunku~\ref{fig:ro-xor-schemat}.
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[font=\footnotesize, >=stealth,
+        ro/.style={draw, rounded corners=1pt, minimum width=1.9cm,
+                   minimum height=0.4cm, inner sep=1pt, fill=gray!12},
+        xorg/.style={draw, circle, inner sep=0pt, minimum size=0.42cm,
+                     fill=white}]
+
+        % ---------- panel (a): 8 oscylatorow, bez XOR ----------
+        \begin{scope}
+            \node[anchor=south] at (3.2,0.45)
+                {(a) 8 oscylatorów (konfiguracje 1 i 2)};
+            \foreach \i in {0,...,7}{
+                \pgfmathtruncatemacro{\nst}{7+2*\i}
+                \pgfmathsetmacro{\y}{-0.25-\i}
+                \node[ro] (a\i) at (0.95,\y) {RO$_{\i}$ (\nst)};
+                \draw[->] (a\i.east) -- (4.6,\y);
+            }
+            \draw[fill=blue!6] (4.6,0.3) rectangle (6.4,-7.8);
+            \node[rotate=90, align=center, font=\small] at (5.5,-3.75)
+                {moduł ekstrakcji\\ entropii (8 kanałów)};
+        \end{scope}
+
+        % ---------- panel (b): 16 oscylatorow, pary XOR ----------
+        \begin{scope}[xshift=8.2cm]
+            \node[anchor=south] at (3.2,0.45)
+                {(b) 16 oscylatorów z XOR (konfiguracje 3 i 4)};
+            \foreach \k in {0,...,7}{
+                \pgfmathtruncatemacro{\ia}{2*\k}
+                \pgfmathtruncatemacro{\ib}{2*\k+1}
+                \pgfmathtruncatemacro{\sa}{7+4*\k}
+                \pgfmathtruncatemacro{\sb}{9+4*\k}
+                \pgfmathsetmacro{\ya}{-\k}
+                \pgfmathsetmacro{\yb}{-\k-0.5}
+                \pgfmathsetmacro{\yc}{-\k-0.25}
+                \node[ro] (ba\k) at (0.95,\ya) {RO$_{\ia}$ (\sa)};
+                \node[ro] (bb\k) at (0.95,\yb) {RO$_{\ib}$ (\sb)};
+                \node[xorg] (x\k) at (3.0,\yc) {$\oplus$};
+                \draw (ba\k.east) -- ++(0.35,0) |- (x\k.west);
+                \draw (bb\k.east) -- ++(0.35,0) |- (x\k.west);
+                \draw[->] (x\k.east) -- (4.6,\yc);
+            }
+            \draw[fill=blue!6] (4.6,0.3) rectangle (6.4,-7.8);
+            \node[rotate=90, align=center, font=\small] at (5.5,-3.75)
+                {moduł ekstrakcji\\ entropii (8 kanałów)};
+        \end{scope}
+    \end{tikzpicture}%
+    }
+    \caption{Schemat doprowadzenia sygnałów oscylatorów do modułu ekstrakcji
+    entropii. W nawiasach podano liczbę stopni inwersji danego oscylatora.
+    W konfiguracjach z szesnastoma oscylatorami wyjścia łączone są w pary
+    operacją XOR, więc w obu wariantach do modułu trafia osiem sygnałów.
+    Wybielanie wykonywane po stronie komputera (konfiguracja 4) nie jest
+    uwzględnione na schemacie.}
+    \label{fig:ro-xor-schemat}
+\end{figure}
 
 Rozmieszczenie oscylatorów w konfiguracjach 2--4 narzucono ręcznie za pomocą ograniczeń
-\texttt{LOC} oraz \texttt{BEL} zapisanych w pliku ograniczeń projektu. Pierwsze
-z~ograniczeń przypisuje dany element logiczny do konkretnego bloku \texttt{SLICE},
-drugie wskazuje wybrany generator funkcji w obrębie tego bloku. Takie podejście pozwala
-uzyskać powtarzalną implementację, niezależną od kolejnych przebiegów narzędzia
-rozmieszczającego, co jest warunkiem porównywalności pomiarów wykonanych w~różnym czasie.
-Obszary zajmowane przez poszczególne oscylatory zestawiono w~tabeli~\ref{tab:rozm},
+\texttt{LOC} (wskazanie konkretnego bloku \texttt{SLICE}) oraz \texttt{BEL} (generator funkcji w obrębie bloku) zapisanych w pliku xdc.
+Pozwoliło to uzyskać powtarzalną implementację, nieoptymalizowaną przez narzędzie Vivado,
+co jest warunkiem porównywalności pomiarów wykonanych w~różnym czasie.
+Obszary zajmowane przez oscylatory zestawiono w~tabeli~\ref{tab:rozm},
 podając zakres współrzędnych bloków, w~których umieszczono należące do nich generatory
 funkcji.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Liczba stopni inwersji oraz obszar rozmieszczenia poszczególnych oscylatorów}
     \label{tab:rozm}
     \small
-    \begin{tabular}{ccccccc}
+    \begin{tabular}{ccc@{\hspace{0.5cm}}ccc@{\hspace{0.5cm}}ccc}
         \toprule
-        RO & Stopnie & Obszar & \phantom{aa} & RO & Stopnie & Obszar \\
+        RO & Stopnie & Obszar & RO & Stopnie & Obszar & RO & Stopnie & Obszar \\
         \midrule
-        0 & 7  & X40Y1--X40Y2   & & 8  & 23 & X0Y48--X2Y49   \\
-        1 & 9  & X0Y99--X1Y99   & & 9  & 25 & X16Y48--X19Y49 \\
-        2 & 11 & X6Y97--X7Y97   & & 10 & 27 & X35Y40--X40Y42 \\
-        3 & 13 & X22Y0--X23Y2   & & 11 & 29 & X23Y87--X28Y89 \\
-        4 & 15 & X19Y15--X22Y16 & & 12 & 31 & X5Y37--X8Y38   \\
-        5 & 17 & X31Y67--X33Y68 & & 13 & 33 & X10Y63--X15Y64 \\
-        6 & 19 & X31Y97--X32Y99 & & 14 & 35 & X33Y24--X36Y26 \\
-        7 & 21 & X4Y73--X7Y74   & & 15 & 37 & X6Y84--X10Y87  \\
+        0 & 7  & X40Y1--X40Y2   & 6  & 19 & X31Y97--X32Y99 & 12 & 31 & X5Y37--X8Y38 \\
+        1 & 9  & X0Y99--X1Y99   & 7  & 21 & X4Y73--X7Y74   & 13 & 33 & X10Y63--X15Y64 \\
+        2 & 11 & X6Y97--X7Y97   & 8  & 23 & X0Y48--X2Y49   & 14 & 35 & X33Y24--X36Y26 \\
+        3 & 13 & X22Y0--X23Y2   & 9  & 25 & X16Y48--X19Y49 & 15 & 37 & X6Y84--X10Y87 \\
+        4 & 15 & X19Y15--X22Y16 & 10 & 27 & X35Y40--X40Y42 &    &    & \\
+        5 & 17 & X31Y67--X33Y68 & 11 & 29 & X23Y87--X28Y89 &    &    & \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.7\textwidth]{gfx/ro_trng_xor_place_and_route.png}
-    \caption{Widok struktury układu Spartan-7 po etapie rozmieszczenia i trasowania dla
-    konfiguracji z 16 oscylatorami. Kolorem pomarańczowym oznaczono zasoby zajęte przez
-    oscylatory pierścieniowe, kolorem błękitnym logikę modułu ekstrakcji entropii oraz
-    nadajnika UART. Podpisy w narożnikach wskazują granice regionów zegarowych}
-    \label{fig:place_and_route}
-\end{figure}
 
 Efekt zastosowanych ograniczeń przedstawiono na rysunku~\ref{fig:place_and_route},
 obrazującym rozmieszczenie logiki w strukturze układu po etapie implementacji.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.49\textwidth]{gfx/ro_trng_xor_place_and_route.png}
+    \caption{Widok struktury układu FPGA po etapie place\&route
+    konfiguracji z 16 oscylatorami. Kolorem pomarańczowym oznaczono zasoby zajęte przez
+    oscylatory pierścieniowe, kolorem błękitnym pozostałą logikę.
+    Podpisy w narożnikach wskazują granice regionów zegarowych.}
+    \label{fig:place_and_route}
+\end{figure}
+
 Oscylatory zajmują niewielkie, wyraźnie odseparowane grupy bloków rozproszone po całej
 powierzchni logiki programowalnej, obejmujące wszystkie cztery regiony zegarowe układu.
 Widoczne jest przy tym zróżnicowanie rozmiaru poszczególnych grup, wynikające
@@ -566,16 +711,6 @@ w~skrajnym przypadku pary 0--1 są to przeciwległe narożniki układu. Wyjątki
 szesnastu bloków. Konfiguracja ta jest zatem najbardziej narażona na wzajemne
 oddziaływanie obu struktur i stanowi potencjalne źródło osłabienia skuteczności operacji
 XOR dla tego kanału.
-
-Łączne zapotrzebowanie na zasoby logiczne wynika bezpośrednio z~liczby stopni inwersji.
-Każdy stopień realizowany jest przez jeden generator funkcji, a~dodatkowy generator
-w~każdym oscylatorze pełni funkcję bramkowania sygnału wyjściowego sygnałem zezwolenia.
-Konfiguracje z~ośmioma oscylatorami wymagają zatem 120 generatorów funkcji, natomiast
-konfiguracje z~szesnastoma oscylatorami 368, nie licząc logiki modułu ekstrakcji entropii
-oraz nadajnika UART. Struktury oscylatorów objęto atrybutami \texttt{dont\_touch} oraz
-\texttt{keep}, co uniemożliwia narzędziu syntezy usunięcie łańcucha inwerterów jako
-logiki redundantnej lub jego uproszczenie do pojedynczej negacji.
-
 \FloatBarrier
 
 \section{Badanie autokorelacji uzyskanych strumieni bitów}
@@ -584,8 +719,7 @@ Jednym z pierwszych wykonanych badań była analiza autokorelacji wygenerowanego
 bitów. W praktyce test ten został użyty do sprawdzenia, czy kolejne bity wygenerowane w
 układzie FPGA nie wykazują krótkookresowych zależności, które mogłyby wynikać z architektury
 układu, sposobu próbkowania lub zbyt małego poziomu entropii na wejściu bloku
-odpowiedzialnego za generację bitów. Do badania wykorzystano zapisany strumień o długości
-$10\,485\,760$ bitów. Analiza została wykonana dla opóźnień od 0 do 15. Obliczenia
+odpowiedzialnego za generację bitów. Analiza została wykonana dla opóźnień od 0 do 15. Obliczenia
 zrealizowano w języku Python, a skrypt został przygotowany tak, aby automatycznie wyznaczać
 współczynniki autokorelacji oraz zapisywać wyniki w postaci wykresu i tabeli.
 

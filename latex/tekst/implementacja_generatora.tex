@@ -363,21 +363,32 @@ przykład do detekcji zboczy i ekstrakcji bitów losowych.
 
 \section{Implementacja modułu ekstrakcji entropii}
 
-W niniejszym podrozdziale przedstawiono implementację modułu odpowiedzialnego za
-przetworzenie surowych, spróbkowanych przebiegów z oscylatorów pierścieniowych w strumień
-bajtów gotowych do wysłania interfejsem komunikacyjnym. Celem tego etapu projektu jest
-oddzielenie warstwy generującej entropię od warstwy transmisyjnej, tak aby zmiana liczby
-oscylatorów lub prędkości transmisji nie wymagała modyfikacji pozostałych elementów
-układu. Wejściem modułu jest ośmiobitowy wektor \texttt{ro\_sync}, zawierający stany
-wszystkich oscylatorów przeprowadzone uprzednio przez rejestry synchronizujące, co
-eliminuje ryzyko propagacji stanów metastabilnych do dalszej części projektu. Cała logika
-pracuje synchronicznie ze zboczem narastającym zegara systemowego, z synchronicznym
-resetem aktywnym w stanie niskim (\texttt{rst\_l}). Kluczowy fragment implementacji
-przedstawiono na listingu \ref{lst:entropy-extractor}.
+Moduł ekstrakcji entropii przekształca surowe, spróbkowane przebiegi
+z oscylatorów pierścieniowych w strumień bajtów gotowych do wysłania
+interfejsem komunikacyjnym. Jego zadaniem jest oddzielenie warstwy generującej
+entropię od warstwy transmisyjnej, tak aby zmiana liczby oscylatorów lub
+prędkości transmisji nie wymagała modyfikacji pozostałych elementów układu.
+Wejściem modułu jest ośmiobitowy wektor \texttt{ro\_sync}, zawierający stany
+wszystkich oscylatorów przeprowadzone uprzednio przez rejestry synchronizujące,
+co ogranicza ryzyko propagacji stanów metastabilnych do dalszej części projektu.
+Cała logika pracuje synchronicznie ze zboczem narastającym zegara systemowego,
+z synchronicznym resetem aktywnym w stanie niskim (\texttt{rst\_l}).
 
+Moduł ma postać jednego procesu zegarowego, którego sedno stanowią dwa
+fragmenty kodu: detekcja zboczy oraz buforowanie i wydawanie bajtów. Pierwszy
+z nich jest kluczowy, ponieważ tylko w nim sygnały fizyczne zamieniane są na
+dane cyfrowe. Wcześniejsze moduły jedynie generują i synchronizują przebiegi,
+a dopiero tutaj zapada decyzja, które zdarzenia w tych przebiegach stają się
+bitami. Od tej decyzji zależą właściwości statystyczne strumienia analizowanego
+w rozdziale piątym. Drugi fragment uzgadnia zmienną liczbę wyekstrahowanych
+bitów ze stałą, bajtową naturą transmisji. Listingi pomijają deklaracje
+zmiennych i rejestrów.
+
+\Needspace{14\baselineskip}
 \begin{lstlisting}[language=VHDL,
-caption={Ekstrakcja bitów i buforowanie strumienia (entropy\_mixer.vhdl)},
-label={lst:entropy-extractor}]
+caption={Detekcja zboczy (entropy\_mixer.vhdl)},
+label={lst:entropy-edges}]
+-- ... wnetrze procesu taktowanego zegarem clk
 if have_first = '0' then
     prev_vec   <= ro_sync;
     have_first <= '1';
@@ -398,7 +409,109 @@ else
             end if;
         end if;
     end loop;
+    -- ... ciag dalszy w galezi else (listing nastepny)
+\end{lstlisting}
 
+Listing \ref{lst:entropy-edges} przedstawia pierwszą część procesu, w której
+surowe próbki zamieniane są na bity. Pierwsza gałąź instrukcji \texttt{if}
+obsługuje takt, w którym moduł zapisuje próbkę odniesienia: wektor
+\texttt{ro\_sync} trafia do rejestru \texttt{prev\_vec}, a znacznik
+\texttt{have\_first} przyjmuje wartość \texttt{'1'}. W następnym takcie
+wykonywana jest gałąź \texttt{else}, w której bieżący wektor porównuje się
+z próbką odniesienia. Zmienne \texttt{fifo\_v} i \texttt{cnt\_v} są lokalnymi
+kopiami bufora i licznika, na których moduł pracuje w ramach jednego taktu.
+
+Pętla \texttt{for} bada niezależnie każdy z ośmiu kanałów. Zbocze narastające
+interpretowane jest jako bit \texttt{'0'}, zbocze opadające jako \texttt{'1'},
+a brak zmiany stanu nie generuje żadnego bitu. Nowy bit dopisywany jest do
+bufora na pozycji wskazanej przez licznik, o ile w buforze jest jeszcze miejsce.
+Ekstrakcja entropii opiera się więc na detekcji zboczy, a nie na bezpośrednim
+odczycie stanu oscylatorów. Odrzucenie próbek, w których stan oscylatora nie
+zmienił się między kolejnymi taktami, eliminuje ponadto najsilniej skorelowaną
+część strumienia wejściowego, powstającą przy próbkowaniu oscylatora zegarem
+o zbyt wysokiej częstotliwości.
+
+Znacznik \texttt{have\_first} jest po każdym porównaniu zerowany, więc moduł
+pracuje w rytmie dwutaktowym: w pierwszym takcie rejestrowana jest próbka
+odniesienia, w drugim następuje porównanie i ekstrakcja bitów. Efektywna
+częstotliwość próbkowania oscylatorów jest zatem dwukrotnie niższa od
+częstotliwości zegara systemowego, a kolejne porównywane pary próbek nie
+zachodzą na siebie, co ogranicza korelację między sąsiednimi bitami strumienia
+wyjściowego. Skutkiem jest też to, że zmiana stanu między drugą próbką jednej
+pary a pierwszą próbką następnej pary nie jest badana.
+
+Rysunek \ref{fig:detekcja-zboczy} ilustruje tę sytuację dla jednego kanału.
+W spróbkowanym przebiegu oscylatora zbocza narastające i opadające występują na
+przemian, bo sygnał dwuwartościowy nie może dwa razy z rzędu zmienić stanu
+w tę samą stronę. Gdyby badana była każda para kolejnych próbek, liczby zer
+i jedynek w strumieniu różniłyby się o co najwyżej jeden, niezależnie od
+współczynnika wypełnienia sygnału. Ponieważ moduł bada tylko co drugi przedział,
+część zboczy jest pomijana. Zrównoważenie zer i jedynek zachodzi więc
+w dłuższym przebiegu w sensie statystycznym, o ile faza oscylatora względem
+zegara nie jest z nim sztywno sprzężona, i nie jest gwarantowane dla każdego
+krótkiego odcinka.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[x=0.9cm,y=1cm,font=\small]
+    % przedziały badane przez moduł (co drugi)
+    \foreach \k in {0,2,4,6,8,10}{
+      \fill[gray!20] (\k,-1.5) rectangle (\k+1,3.1);
+    }
+    % granice przedziałów, czyli takty zegara
+    \foreach \k in {0,...,11}{
+      \draw[densely dotted,gray] (\k,-1.5) -- (\k,3.1);
+    }
+    % przebieg widziany przez moduł
+    \draw[very thick] (-0.5,0) -- (2.5,0) -- (2.5,1) -- (4.5,1) -- (4.5,0)
+      -- (7.5,0) -- (7.5,1) -- (8.5,1) -- (8.5,0) -- (11.5,0);
+    % próbki
+    \foreach \k/\v in {0/0,1/0,2/0,3/1,4/1,5/0,6/0,7/0,8/1,9/0,10/0,11/0}{
+      \fill (\k,\v) circle (2pt);
+      \node at (\k,-0.5) {$\v$};
+      \node at (\k,-1.1) {$t_{\k}$};
+    }
+    % zbocza w przebiegu
+    \node at (2.5,1.55) {$\uparrow$};
+    \node at (4.5,1.55) {$\downarrow$};
+    \node at (7.5,1.55) {$\uparrow$};
+    \node at (8.5,1.55) {$\downarrow$};
+    % bity wygenerowane przez moduł
+    \draw[->] (2.5,1.8) -- (2.5,2.3);
+    \draw[->] (4.5,1.8) -- (4.5,2.3);
+    \draw[->] (8.5,1.8) -- (8.5,2.3);
+    \node[draw,circle,inner sep=1.5pt] at (2.5,2.65) {0};
+    \node[draw,circle,inner sep=1.5pt] at (4.5,2.65) {1};
+    \node[draw,circle,inner sep=1.5pt] at (8.5,2.65) {1};
+    \node at (7.5,2.65) {$\times$};
+    % opisy wierszy
+    \node[anchor=east] at (-0.7,2.65) {bity};
+    \node[anchor=east] at (-0.7,1.55) {zbocza};
+    \node[anchor=east] at (-0.7,0.5) {przebieg};
+    \node[anchor=east] at (-0.7,-0.5) {próbka};
+    \node[anchor=east] at (-0.7,-1.1) {takt};
+    % legenda
+    \fill[gray!20] (0,-2.3) rectangle (0.5,-1.9);
+    \node[anchor=west] at (0.6,-2.1) {przedział badany przez moduł};
+    \draw (6.5,-2.3) rectangle (7,-1.9);
+    \node[anchor=west] at (7.1,-2.1) {przedział pominięty};
+  \end{tikzpicture}%
+  }
+  \caption{Detekcja zboczy dla jednego kanału. W spróbkowanym przebiegu
+  zbocza narastające ($\uparrow$, bit 0) i opadające ($\downarrow$, bit 1)
+  występują na przemian. Moduł porównuje jednak tylko pary próbek
+  z zacieniowanych przedziałów, więc zbocze w przedziale pominiętym
+  ($\times$) nie daje bitu, a w strumieniu mogą pojawić się dwie jednakowe
+  wartości pod rząd (tu 0, 1, 1).}
+  \label{fig:detekcja-zboczy}
+\end{figure}
+
+\Needspace{14\baselineskip}
+\begin{lstlisting}[language=VHDL,
+caption={Buforowanie i wydawanie bajtu (entropy\_mixer.vhdl)},
+label={lst:entropy-output}]
+    -- ... ciag dalszy galezi else (po petli for z poprzedniego listingu)
     if cnt_v >= 8 and uart_ready = '1' then
         random_byte_r <= fifo_v(7 downto 0);
         valid_r       <= '1';
@@ -419,65 +532,66 @@ else
 end if;
 \end{lstlisting}
 
-Ekstrakcja entropii opiera się na detekcji zboczy, a nie na bezpośrednim odczycie stanu
-oscylatorów. Bieżący wektor \texttt{ro\_sync} porównywany jest z próbką poprzednią,
-przechowywaną w rejestrze \texttt{prev\_vec}, przy czym dla każdego z ośmiu kanałów
-niezależnie badana jest zmiana stanu: zbocze narastające interpretowane jest jako bit
-o wartości \texttt{'0'}, zbocze opadające jako \texttt{'1'}, natomiast brak zmiany stanu
-nie generuje żadnego bitu. Ponieważ dla każdego oscylatora zbocza narastające i opadające
-muszą występować naprzemiennie, liczba wygenerowanych zer i jedynek pozostaje w dłuższym
-przebiegu zrównoważona niezależnie od współczynnika wypełnienia sygnału. Odrzucenie
-próbek, w których stan oscylatora nie zmienił się między kolejnymi taktami, eliminuje
-ponadto najsilniej skorelowaną część strumienia wejściowego, powstającą przy próbkowaniu
-oscylatora zegarem o zbyt wysokiej częstotliwości.
+Listing \ref{lst:entropy-output} zawiera drugą część procesu, w której bity
+trafiają do bufora i są wydawane w postaci bajtów. Pozyskane bity gromadzone
+są w szesnastobitowym buforze \texttt{bit\_fifo}, którego zapełnienie śledzi
+licznik \texttt{fifo\_count}. Buforowanie jest konieczne, ponieważ liczba
+bitów uzyskiwanych w jednym cyklu porównania jest zmienna i zależy od tego,
+ile oscylatorów zmieniło stan. Może ona wynosić od zera do ośmiu.
 
-Znacznik \texttt{have\_first} po każdym cyklu porównania jest ponownie zerowany, w efekcie
-czego moduł pracuje w rytmie dwutaktowym: w pierwszym takcie rejestrowana jest próbka
-odniesienia, w drugim następuje porównanie i ekstrakcja bitów. Efektywna częstotliwość
-próbkowania oscylatorów jest zatem dwukrotnie niższa od częstotliwości zegara
-systemowego, a kolejne porównywane pary próbek nie zachodzą na siebie, co ogranicza
-korelację między sąsiednimi bitami strumienia wyjściowego.
+Gdy w buforze znajduje się co najmniej osiem bitów, a nadajnik zgłasza
+gotowość sygnałem \texttt{uart\_ready}, osiem najstarszych bitów wystawiane
+jest na port \texttt{random\_byte} wraz z jednotaktowym impulsem
+\texttt{random\_valid}. Następnie zawartość bufora przesuwana jest o osiem
+pozycji, a licznik jest odpowiednio zmniejszany. Warunkowanie transmisji flagą
+gotowości nadajnika realizuje mechanizm handshake opisany w kolejnym
+podrozdziale i zapobiega generowaniu bajtów szybciej, niż jest w stanie
+odebrać je interfejs komunikacyjny. Nadmiarowe bity pozostają w buforze do
+czasu zwolnienia nadajnika, a gdy bufor jest pełny, kolejne bity są
+odrzucane.
 
-Pozyskane bity gromadzone są w szesnastobitowym buforze \texttt{bit\_fifo}, którego
-zapełnienie śledzi licznik \texttt{fifo\_count}. Buforowanie jest konieczne, ponieważ
-liczba bitów uzyskiwanych wjednym cyklu porównania jest zmienna i zależy od tego, ile
-oscylatorów zmieniło stan - może wynosić od zera do ośmiu. Gdy w buforze znajduje się co
-najmniej osiem bitów, a nadajnik zgłasza gotowość sygnałem \texttt{uart\_ready}, osiem
-najstarszych bitów wystawiane jest na port \texttt{random\_byte} wraz z jednotaktowym
-impulsem \texttt{random\_valid}, po czym zawartość bufora przesuwana jest o osiem pozycji,
-a licznik odpowiednio zmniejszany. Warunkowanie transmisji flagą gotowości nadajnika
-realizuje mechanizm handshake opisany w kolejnym podrozdziale i zapobiega
-generowaniu bajtów szybciej, niż jest w stanie odebrać je interfejs komunikacyjny;
-nadmiarowe bity pozostają w buforze do czasu zwolnienia nadajnika.
+Na końcu procesu zaktualizowane wartości zmiennych zapisywane są do rejestrów
+\texttt{bit\_fifo} i \texttt{fifo\_count}, a znacznik \texttt{have\_first}
+wraca do wartości \texttt{'0'}, co rozpoczyna kolejny cykl dwutaktowy.
 
-Przedstawiony moduł stanowi naturalne miejsce w ścieżce przetwarzania danych, w którym
-można zaimplementować sprzętowe algorytmy korekcji rozkładu (ang. \emph{debiasing}).
-Umieszczenie takiego bloku bezpośrednio przed nadajnikiem, a więc po ekstrakcji bitów
-i przed ich serializacją do bajtów, jest rozwiązaniem korzystnym z dwóch powodów.
-Po pierwsze, korekcja operuje wówczas na strumieniu bitowym o ustalonym formacie,
-niezależnie od liczby użytych oscylatorów. Po drugie, algorytmy tej klasy charakteryzują
-się zmienną przepustowością wyjściową, a obecny w module bufor pozwala pogodzić ją ze
-stałą, ramkową naturą transmisji UART. Typowym przykładem jest korektor von Neumanna,
-analizujący strumień w rozłącznych parach bitów: parę \texttt{01} zastępuje bitem
-\texttt{'0'}, parę \texttt{10} bitem \texttt{'1'}, natomiast pary \texttt{00} i \texttt{11}
-odrzuca w całości. Procedura ta usuwa systematyczne odchylenie prawdopodobieństwa
-wystąpienia zera i jedynki, o ile kolejne bity są statystycznie niezależne, kosztem
-redukcji przepustowości - w przypadku źródła nieobciążonego do około jednej czwartej
-strumienia wejściowego. Zastosowany mechanizm detekcji zboczy realizuje częściowo
-podobne zadanie, jednak w odniesieniu do pojedynczego kanału i w domenie czasu, przez co
-nie usuwa korelacji między kanałami, implementacja algorytmu wybielania może zostać wykonana
-również już po akwizycji danych z modułu nadajnika UART po stronie urządzenia docelowego.
+Przedstawiony moduł stanowi naturalne miejsce w ścieżce przetwarzania danych,
+w którym można zaimplementować sprzętowe algorytmy korekcji rozkładu
+(ang. \emph{debiasing}). Umieszczenie takiego bloku bezpośrednio przed
+nadajnikiem, a więc po ekstrakcji bitów i przed ich serializacją do bajtów,
+jest rozwiązaniem korzystnym z dwóch powodów. Po pierwsze, korekcja operuje
+wówczas na strumieniu bitowym o ustalonym formacie, niezależnie od liczby
+użytych oscylatorów. Po drugie, algorytmy tej klasy charakteryzują się
+zmienną przepustowością wyjściową, a obecny w module bufor pozwala pogodzić
+ją ze stałą, ramkową naturą transmisji UART.
 
-\section{Implementacja protokołu UART do transmisji ciągu losowych bitow}
+Typowym przykładem jest korektor von Neumanna, analizujący strumień
+w rozłącznych parach bitów: parę \texttt{01} zastępuje bitem \texttt{'0'},
+parę \texttt{10} bitem \texttt{'1'}, a pary \texttt{00} i \texttt{11} odrzuca
+w całości. Procedura ta usuwa systematyczne odchylenie prawdopodobieństwa
+wystąpienia zera i jedynki, o ile kolejne bity są statystycznie niezależne.
+Odbywa się to kosztem przepustowości, która w przypadku źródła nieobciążonego
+spada do około jednej czwartej strumienia wejściowego.
 
-W niniejszym podrozdziale przedstawiono implementację protokołu UART, przeznaczoną do 
-transmisji ciągu losowych bitów generowanych przez generator. Celem tego etapu 
-projektu jest umożliwienie niezależnej, asynchronicznej komunikacji pomiędzy układem FPGA a 
-systemem zewnętrznym, w którym dane losowe mogą być dalej przetwarzane lub analizowane. Moduł
-jest parametryzowany przez parametr generic \texttt{clks\_per\_bit} decydujący o szybkości nadajnika (listing \ref{lst:uart_tx_entity}).
+Zastosowana detekcja zboczy realizuje częściowo podobne zadanie, lecz dla
+pojedynczego kanału i w domenie czasu, więc nie usuwa korelacji między
+kanałami. Algorytm korekcji można też wykonać po akwizycji danych, już po
+stronie odbiorcy bajtów wysyłanych przez nadajnik UART.
+
+\section{Implementacja protokołu UART do transmisji ciągu losowych bitów}
+
+Bajty wytworzone przez moduł ekstrakcji entropii trzeba przekazać poza układ
+FPGA, do komputera, na którym prowadzona jest ocena statystyczna generatora.
+Komputer rejestruje odebrane bajty w postaci serii o ustalonej długości,
+a następnie narzędzia napisane w języku Python obliczają na niej obciążenie
+rozkładu bitów (test monobitowy), współczynniki autokorelacji oraz
+dwuwymiarowe mapy rozkładu słów wielobitowych. Do tego przekazu wybrano
+interfejs UART, ponieważ jest on dostępny na płytce rozwojowej i nie wymaga
+linii zegarowej, więc komunikacja pozostaje asynchroniczna względem układu
+FPGA. Nadajnik opisano w VHDL jako osobny moduł, dzięki czemu wymiana warstwy
+transmisyjnej nie wpływa na źródło entropii.
 
 \begin{lstlisting}[language=VHDL,
-caption={Entity UART TX (uart\_tx.vhdl)},
+caption={Jednostka UART TX (uart\_tx.vhdl)},
 label={lst:uart_tx_entity}]
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -500,42 +614,47 @@ entity uart_tx is
 end uart_tx;
 \end{lstlisting}
 
-Architektura modułu uart\_tx to typowy przykład maszyny stanów która stanowi podstawową konstrukcję w projektach
-FPGA (listing \ref{lst:uart_tx}).
-Nadajnik zrealizowano jako automat skończony (ang. \emph{finite state machine}, FSM)
-o czterech stanach, z których każdy odpowiada kolejnej części ramki UART w formacie 8N1. 
+Listing \ref{lst:uart_tx_entity} przedstawia interfejs nadajnika. Parametr
+generyczny \texttt{clks\_per\_bit} określa liczbę taktów zegara przypadającą
+na jeden bit i wyznacza prędkość transmisji:
+%
+\begin{equation}
+  \texttt{clks\_per\_bit} = \frac{f_{\mathrm{clk}}}{B},
+  \label{eq:clks-per-bit}
+\end{equation}
+%
+gdzie $f_{\mathrm{clk}}$ jest częstotliwością zegara systemowego, a $B$
+prędkością transmisji w bodach. Komentarz w listingu zawiera przykładowe
+wartości dla kilku standardowych prędkości.
 
-W stanie \texttt{IDLE} linia \texttt{tx\_out}
-utrzymywana jest w stanie wysokim, licznik \texttt{clk\_cnt} oraz wskaźnik bitu
-\texttt{bit\_idx} są zerowane, a flaga \texttt{tx\_ready} sygnalizuje gotowość na przyjęcie
-nowego bajtu. Wystawienie przez modułnadrzędny flagi \texttt{data\_valid} powoduje
-zatrzaśnięcie danych w rejestrze \texttt{tx\_buf}, opuszczenie flagi gotowości i przejście
-do stanu \texttt{START\_BIT}, w którym linia jest ściągana do zera na czas jednego okresu
-bitowego - to zbocze opadające stanowi dla odbiornika znacznik początku transmitowanej ramki.
+Wejście \texttt{data\_in} przyjmuje bajt do wysłania, a \texttt{data\_valid}
+informuje, że bajt jest gotowy do pobrania. Wyjście \texttt{tx\_ready}
+sygnalizuje, że nadajnik jest wolny, a \texttt{tx\_out} jest linią szeregową
+łączącą układ FPGA z komputerem. Pozostałe porty to zegar \texttt{clk} oraz
+reset \texttt{rst\_l} aktywny stanem niskim.
 
-Stan \texttt{DATA\_BITS} wyprowadza na linię kolejne bity z rejestru \texttt{tx\_buf},
-adresowane wskaźnikiem \texttt{bit\_idx}, począwszy od bitu najmniej znaczącego, zgodnie
-z konwencją UART. Po ośmiu bitach automat przechodzi do stanu \texttt{STOP\_BIT}, w którym
-linia wraca do stanu wysokiego na czas jednego bitu, po czym następuje powrót do
-\texttt{IDLE} i ponowne zgłoszenie gotowości.
+Architekturę nadajnika zrealizowano jako automat skończony
+(ang. \emph{finite state machine}, FSM) o czterech stanach, z których każdy
+odpowiada kolejnej części ramki UART w formacie 8N1, czyli bitowi startu,
+ośmiu bitom danych bez parzystości i bitowi stopu. Na jeden bajt przypada
+więc dziesięć bitów na łączu, a efektywna przepustowość danych wynosi 80\%
+prędkości transmisji.
 
-W każdym ze stanów odmierzanie czasu realizuje ten sam mechanizm: licznik \texttt{clk\_cnt}
-jest inkrementowany do wartości \texttt{clks\_per\_bit-1}, a jego przepełnienie wyznacza
-moment zmiany stanu. Parametr \texttt{clks\_per\_bit} stanowi iloraz częstotliwości zegara
-systemowego i zadanej prędkości transmisji, dzięki czemu szybkość transmisji można zmienić
-bez modyfikacji struktury automatu. Zastosowanie jednego wspólnego licznika dla wszystkich
-faz ramki gwarantuje jednakowy czas trwania każdego bitu, co jest warunkiem poprawnego
-próbkowania sygnału po stronie odbiornika.
+We wszystkich stanach czas odmierza ten sam mechanizm. Licznik
+\texttt{clk\_cnt} jest inkrementowany do wartości \texttt{clks\_per\_bit-1},
+a jego przepełnienie wyznacza moment zmiany stanu, więc każdy stan trwa
+dokładnie \texttt{clks\_per\_bit} taktów. Wspólny licznik dla wszystkich faz
+ramki gwarantuje jednakowy czas trwania każdego bitu, co jest warunkiem
+poprawnego próbkowania sygnału po stronie odbiornika. Zmiana prędkości
+transmisji polega wyłącznie na zmianie parametru generycznego i nie wymaga
+modyfikacji struktury automatu. Kolejne listingi przedstawiają kolejne gałęzie
+instrukcji \texttt{case}, z pominięciem deklaracji stanów i sygnałów.
 
-Komunikację z pozostałymi modułami projektu oparto na mechanizmie handshake z użyciem flag
-\texttt{data\_valid} i \texttt{tx\_ready}. Rozwiązanie to eliminuje konieczność
-odmierzania czasu transmisji przez moduł nadrzędny - nowa dana może zostać wystawiona
-wyłącznie wtedy, gdy nadajnik zgłasza gotowość, co zapobiega nadpisaniu zawartości rejestru
-\texttt{tx\_buf} w trakcie trwania ramki i utracie danych.
-
+\Needspace{12\baselineskip}
 \begin{lstlisting}[language=VHDL,
-caption={UART TX State Machine (uart\_tx.vhdl)},
-label={lst:uart_tx}]
+caption={Stan IDLE automatu UART TX (uart\_tx.vhdl)},
+label={lst:uart_tx_idle}]
+-- ... wnetrze procesu taktowanego zegarem clk
 case state is
     when IDLE =>
         tx_out   <= '1';
@@ -547,6 +666,27 @@ case state is
             tx_ready <= '0';
             state   <= START_BIT;
         end if;
+    -- ... pozostale stany w kolejnych listingach
+\end{lstlisting}
+
+Listing \ref{lst:uart_tx_idle} przedstawia stan spoczynkowy \texttt{IDLE}.
+Linia \texttt{tx\_out} jest utrzymywana w stanie wysokim, co odpowiada
+nieaktywnemu łączu UART. Licznik \texttt{clk\_cnt} oraz wskaźnik bitu
+\texttt{bit\_idx} są zerowane, a flaga \texttt{tx\_ready} sygnalizuje gotowość
+na przyjęcie nowego bajtu.
+
+Gdy moduł nadrzędny ustawi \texttt{data\_valid}, bajt z \texttt{data\_in}
+zostaje zatrzaśnięty w rejestrze \texttt{tx\_buf}, a automat przechodzi do
+stanu \texttt{START\_BIT}. Ponieważ w VHDL obowiązuje ostatnie przypisanie
+w procesie, w takcie przyjęcia danych flaga \texttt{tx\_ready} opada, mimo że
+wcześniej w tym samym stanie jest ustawiana na jeden. Stan \texttt{IDLE}
+sprawdza \texttt{data\_valid} w każdym takcie, więc wystarczy impuls trwający
+jeden takt.
+
+\Needspace{12\baselineskip}
+\begin{lstlisting}[language=VHDL,
+caption={Stan START\_BIT automatu UART TX (uart\_tx.vhdl)},
+label={lst:uart_tx_start}]
     when START_BIT =>
         tx_out <= '0';
         if clk_cnt < clks_per_bit-1 then
@@ -555,6 +695,18 @@ case state is
             clk_cnt <= 0;
             state   <= DATA_BITS;
         end if;
+\end{lstlisting}
+
+Listing \ref{lst:uart_tx_start} zawiera stan \texttt{START\_BIT}. Linia jest
+ściągana do zera na czas jednego okresu bitowego. To zbocze opadające stanowi
+dla odbiornika znacznik początku transmitowanej ramki i pozwala mu
+zsynchronizować własne próbkowanie. Po upływie okresu bitowego licznik wraca
+do zera, a automat przechodzi do stanu \texttt{DATA\_BITS}.
+
+\Needspace{16\baselineskip}
+\begin{lstlisting}[language=VHDL,
+caption={Stan DATA\_BITS automatu UART TX (uart\_tx.vhdl)},
+label={lst:uart_tx_data}]
     when DATA_BITS =>
         tx_out <= tx_buf(bit_idx);
         if clk_cnt < clks_per_bit-1 then
@@ -568,6 +720,22 @@ case state is
                 state   <= STOP_BIT;
             end if;
         end if;
+\end{lstlisting}
+
+Listing \ref{lst:uart_tx_data} przedstawia stan \texttt{DATA\_BITS}, w którym
+na linię wyprowadzane są kolejne bity bajtu. Bit wskazywany przez
+\texttt{bit\_idx} jest pobierany z rejestru \texttt{tx\_buf}, począwszy od bitu
+najmniej znaczącego, zgodnie z konwencją UART.
+
+Po upływie okresu bitowego wskaźnik jest zwiększany. Gdy osiągnie wartość 7,
+czyli po wysłaniu ośmiu bitów, jest zerowany, a automat przechodzi do stanu
+\texttt{STOP\_BIT}. Zerowanie wskaźnika już w tym miejscu sprawia, że po
+zakończeniu ramki jest on gotowy do wysłania następnego bajtu.
+
+\Needspace{10\baselineskip}
+\begin{lstlisting}[language=VHDL,
+caption={Stan STOP\_BIT automatu UART TX (uart\_tx.vhdl)},
+label={lst:uart_tx_stop}]
     when STOP_BIT =>
         tx_out <= '1';
         if clk_cnt < clks_per_bit-1 then
@@ -578,3 +746,17 @@ case state is
         end if;
 end case;
 \end{lstlisting}
+
+Listing \ref{lst:uart_tx_stop} zawiera stan \texttt{STOP\_BIT}, w którym linia
+wraca do stanu wysokiego na czas jednego bitu. Zapewnia to odstęp między
+kolejnymi ramkami, a odbiornik rozpoznaje po nim koniec ramki i może
+przygotować się na kolejne zbocze opadające. Następnie automat wraca do stanu
+\texttt{IDLE} i ponownie zgłasza gotowość.
+
+Komunikację z modułem ekstrakcji entropii oparto na mechanizmie handshake
+z użyciem flag \texttt{data\_valid} i \texttt{tx\_ready}. W module ekstrakcji
+sygnał gotowości nadajnika występuje pod nazwą \texttt{uart\_ready}.
+Rozwiązanie to eliminuje konieczność odmierzania czasu transmisji przez moduł
+nadrzędny. Nowy bajt może zostać wystawiony wyłącznie wtedy, gdy nadajnik
+zgłasza gotowość, co zapobiega nadpisaniu zawartości rejestru \texttt{tx\_buf}
+w trakcie trwania ramki i utracie danych.

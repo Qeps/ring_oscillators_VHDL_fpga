@@ -742,3 +742,8 @@
 \usepackage{makecell}
 \usepackage{booktabs}
 \usepackage{placeins}                              % dla \FloatBarrier
+\usepackage{tikz}
+\usepackage{float}      % opcja [H] dla rysunku
+\usepackage{needspace}  % \Needspace
+\usepackage{graphicx}   % \resizebox
+\usepackage{tikz}

@@ -29,14 +29,14 @@ odrębną interpretację:
           \label{eq:shannon}
         \end{equation}
         średnia liczba bitów informacji na symbol, miara przyjęta
-        w AIS-31 \cite{killmann2011ais31};
+        w AIS-31 \cite{killmann2011ais31}.
   \item \textbf{entropia kolizji} ($\alpha = 2$):
         \begin{equation}
           H_2(X) = -\log_2\sum_{i=1}^{n} p_i^2 ,
           \label{eq:kolizji}
         \end{equation}
         związana z prawdopodobieństwem kolizji, wykorzystywana
-        w estymatorach i w twierdzeniach o ekstrakcji losowości;
+        w estymatorach i w twierdzeniach o ekstrakcji losowości.
   \item \textbf{min-entropia} ($\alpha \to \infty$):
         \begin{equation}
           H_\infty(X) = -\log_2 \max_{i} p_i ,
@@ -210,19 +210,19 @@ pakiety, pozwalające na porównanie wyników z literaturą:
 \begin{itemize}
   \item \textbf{NIST SP 800-22} \cite{rukhin2010sp80022} - 15 testów
         obejmujących częstość, serie, rangę macierzy, transformatę Fouriera,
-        złożoność liniową, entropię przybliżoną i inne; przeznaczony do
+        złożoność liniową, entropię przybliżoną i inne, przeznaczony do
         oceny ciągów rzędu $10^6$ bitów i wyżej, z analizą rozkładu
-        wartości $p$ dla wielu podciągów;
+        wartości $p$ dla wielu podciągów.
   \item \textbf{NIST SP 800-90B} \cite{turan2018sp80090b} - nie pakiet
         testów zgodności, lecz zestaw estymatorów min-entropii (ścieżka
         i.i.d. oraz ścieżka non-i.i.d., w której przyjmuje się minimum
         z dziesięciu estymatorów, m.in. kolizyjnego, kompresyjnego,
-        markowskiego i opartych na predykcji);
+        markowskiego i opartych na predykcji)
   \item \textbf{Dieharder} oraz \textbf{TestU01} \cite{lecuyer2007testu01}
         --- rozbudowane baterie testów (w tym \emph{BigCrush}) o istotnie
         wyższej mocy, wymagające jednak strumieni rzędu $10^{11}$ bitów,
         co dla generatorów sprzętowych o umiarkowanej przepustowości bywa
-        praktycznie nieosiągalne;
+        praktycznie nieosiągalne
   \item \textbf{AIS-31} \cite{killmann2011ais31} - procedury T0-T8
         stosowane w certyfikacji europejskiej, obejmujące zarówno strumień
         surowy, jak i wyjściowy, wraz z wymaganiem istnienia
@@ -484,7 +484,7 @@ która pozwala testować jednostajność rozkładu słów (test serii, w wariant
 literaturowych określany też jako \emph{serial test} lub \emph{poker test}).
 Bezpośrednie oszacowanie entropii z częstości słów, $\hat{H} = -\sum_m
 \hat{q}_m \log_2 \hat{q}_m$, jest obciążone w dół i wymaga korekty
-Millera--Madowa rzędu $(2^k-1)/(2M\ln 2)$; z tego względu wiarygodna
+Millera--Madowa rzędu $(2^k-1)/(2M\ln 2)$ z tego względu wiarygodna
 estymacja wymaga $M \gg 2^k$, co ogranicza praktycznie osiągalne $k$.
 
 Uzupełnieniem analizy liczbowej jest reprezentacja graficzna w postaci
@@ -507,17 +507,17 @@ a ich typowe wzorce mają bezpośrednią interpretację układową:
 
 \begin{itemize}
   \item \textbf{linie ukośne} - zależność funkcyjna między słowami
-        odległymi o $d$, czyli deterministyczne odwzorowanie stanu;
+        odległymi o $d$, czyli deterministyczne odwzorowanie stanu.
   \item \textbf{prążki poziome lub pionowe} - niejednorodność rozkładu
         brzegowego słów (uprzywilejowane wartości), wykrywalna również
-        testem \eqref{eq:chi2-slowa};
+        testem \eqref{eq:chi2-slowa}.
   \item \textbf{zagęszczenie wokół przekątnej} - dodatnia korelacja
-        kolejnych słów, odpowiadająca pamięci źródła;
+        kolejnych słów, odpowiadająca pamięci źródła.
   \item \textbf{regularna krata} - okresowość strumienia, wskazująca na
         skończony i krótki cykl efektywny.
 \end{itemize}
 
-Ocena wzrokowa mapy stanowi wstępny etap diagnostyki; sformalizowaniem tej
+Ocena wzrokowa mapy stanowi wstępny etap diagnostyki, sformalizowaniem tej
 samej informacji jest omawiany wyżej test $\chi^2$ dla par słów, o liczbie
 stopni swobody $2^{2k}-1$.
 

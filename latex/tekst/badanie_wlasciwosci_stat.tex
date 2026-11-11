@@ -723,20 +723,20 @@ odpowiedzialnego za generację bitów. Analiza została wykonana dla opóźnień
 zrealizowano w języku Python, a skrypt został przygotowany tak, aby automatycznie wyznaczać
 współczynniki autokorelacji oraz zapisywać wyniki w postaci wykresu i tabeli.
 
-\subsection{Wyniki pomiaru dla 8 oscylatorów bez wybielania}
+\subsection{Wyniki pomiaru dla 8 oscylatorów rozmieszczonych automatycznie}
+Przebieg współczynnika
+w funkcji opóźnienia przedstawiono na rysunku~\ref{fig:autokorelacja_bitstream}.
 
-Przebieg współczynnika autokorelacji w funkcji opóźnienia przedstawiono na
-rysunku~\ref{fig:autokorelacja_bitstream}, natomiast dokładne wartości liczbowe zestawiono
-w tabeli~\ref{tab:autokorelacja_wyniki}.
-
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{gfx/no_wh_ac.png}
     \caption{Autokorelacja badanego strumienia bitów dla opóźnień od 0 do 15}
     \label{fig:autokorelacja_bitstream}
 \end{figure}
 
-\begin{table}[ht]
+Dokładne wartości liczbowe zestawiono w tabeli~\ref{tab:autokorelacja_wyniki}.
+
+\begin{table}[H]
     \centering
     \caption{Wartości współczynników autokorelacji dla badanego strumienia bitów}
     \label{tab:autokorelacja_wyniki}
@@ -757,66 +757,82 @@ w tabeli~\ref{tab:autokorelacja_wyniki}.
     \end{tabular}
 \end{table}
 
-Na podstawie otrzymanych wyników można stwierdzić, że poza oczywistą wartością równą
-jedności dla opóźnienia zerowego wszystkie współczynniki autokorelacji pozostają bliskie
-zeru, nie przekraczając wartości bezwzględnej $1{,}2 \cdot 10^{-3}$. W badanym zakresie nie
-zaobserwowano narastającego trendu ani wartości sugerujących silną zależność pomiędzy
-kolejnymi bitami.
+Wartość dla opóźnienia zerowego wynosi jeden z definicji, ponieważ każda
+próbka jest mnożona przez samą siebie. Nie jest to więc wynik pomiaru, lecz
+kontrola poprawności obliczeń, a o jakości strumienia mówi dopiero piętnaście
+pozostałych współczynników.
 
-Interpretacja tych wielkości wymaga jednak odniesienia do rozrzutu statystycznego. Dla
-strumienia w pełni losowego o długości $N$ bitów wyznaczone współczynniki wahają się wokół
-zera z odchyleniem standardowym w przybliżeniu równym $1/\sqrt{N}$, co dla badanej serii
-daje wartość $\sigma \approx 3{,}1 \cdot 10^{-4}$. Zdecydowana większość odnotowanych
-wartości nie przekracza dwukrotności tego poziomu i mieści się w granicach naturalnych
-fluktuacji.
+Współczynniki te są bardzo małe w skali bezwzględnej. Wartość $R = 1$ oznacza
+zależność całkowitą, a największy z uzyskanych współczynników,
+$1{,}2 \cdot 10^{-3}$, oznacza, że prawdopodobieństwo zgodności dwóch bitów
+odległych o dane opóźnienie wynosi $(1+R)/2 \approx 0{,}5006$. Różni się ono od
+$1/2$ o mniej niż $0{,}06$ punktu procentowego.
 
-Wyjątkiem jest opóźnienie równe 8, dla którego uzyskano $R = 0{,}001182$, czyli blisko
-czterokrotność odchylenia standardowego. Wartość ta odstaje od pozostałych, a jej położenie
-nie jest przypadkowe, ponieważ opóźnienie 8 odpowiada zarówno liczbie oscylatorów
-pierścieniowych, jak i długości bajtu wystawianego przez moduł ekstrakcji entropii. Bity
-zapisywane są do bufora w stałej kolejności numerów kanałów, wobec czego pozycje odległe
-o osiem miejsc pochodzą statystycznie częściej z tego samego oscylatora niż pozycje
-sąsiednie. Zaobserwowane odchylenie należy zatem wiązać z deterministyczną strukturą
-serializacji, a nie z ogólnym brakiem losowości źródła. Pozostałe opóźnienia będące
-wielokrotnościami ośmiu nie wykazują podobnego wzmocnienia, co wskazuje, że efekt ma
-charakter lokalny i nie prowadzi do wystąpienia periodyczności w dłuższej skali.
+Aby ocenić, czy wartości te są małe także w sensie statystycznym, trzeba je
+odnieść do rozrzutu spodziewanego dla źródła idealnego. Zgodnie ze wzorem
+\eqref{eq:ci-autokorelacja} odchylenie standardowe współczynnika wynosi
+$\sigma = 1/\sqrt{N} \approx 3{,}1 \cdot 10^{-4}$, a granica akceptacji na
+poziomie $\alpha = 0{,}05$ równa się $1{,}96\,\sigma \approx 6 \cdot 10^{-4}$.
+W tej granicy mieści się czternaście z piętnastu współczynników. Największy
+z nich, dla opóźnienia 3, wynosi $5{,}4 \cdot 10^{-4}$, czyli $1{,}8\,\sigma$.
+Ponieważ sprawdzono piętnaście opóźnień, oczekiwana liczba przekroczeń
+granicy dla źródła idealnego wynosi $15 \cdot 0{,}05 = 0{,}75$, więc pojedyncze
+przekroczenie nie byłoby samo w sobie niepokojące. O jego znaczeniu decyduje
+wielkość.
 
-Analiza autokorelacji została potraktowana jako test kontrolny, pozwalający wychwycić
-problemy implementacyjne jeszcze przed wykonaniem bardziej rozbudowanych badań
-statystycznych. W przypadku projektów sprzętowych takie podejście jest szczególnie
-przydatne, ponieważ umożliwia szybkie porównanie wyników po każdej zmianie konfiguracji
-układu FPGA. Uzyskany wynik nie wskazuje na błąd implementacji, wyznacza natomiast
-kierunek dalszej analizy, którą przedstawiono w kolejnych podrozdziałach dotyczących
-strumienia poddanego wybielaniu oraz dwuwymiarowych map opóźnień.
+Przekroczenie to występuje dla opóźnienia 8, w którym $R = 0{,}001182$, czyli
+około $3{,}8\,\sigma$. Prawdopodobieństwo takiego odchylenia dla źródła
+idealnego wynosi około $1{,}3 \cdot 10^{-4}$, a po uwzględnieniu piętnastu
+sprawdzanych opóźnień około $2 \cdot 10^{-3}$. Wynik jest więc istotny także na
+poziomie $0{,}01$ i nie da się go przypisać samej liczbie prób. Jest to przy
+tym jedyny wyraźny wzrost w całym zakresie. Wartości dla sąsiednich opóźnień
+7 i 9 są co do modułu od siedmiu do dwunastu razy mniejsze i mają przeciwny
+znak, więc maksimum jest ostre.
+
+Położenie tego maksimum wiąże się ze strukturą serializacji. Opóźnienie 8 jest
+równe liczbie kanałów, z których moduł ekstrakcji dopisuje bity do bufora
+w kolejności ich numerów. Gdy wszystkie kanały wnoszą średnio jednakowo wiele
+bitów, kolejne bity jednego kanału dzieli w strumieniu średnio osiem pozycji.
+Zależność między następującymi po sobie bitami jednego oscylatora uwidacznia
+się więc właśnie przy tym opóźnieniu. Zmienna liczba bitów wnoszonych w jednym
+cyklu rozmywa tę zależność, co jest zgodne ze słabym i pojedynczym
+maksimum. Jest to jednak interpretacja oparta na budowie modułu, a nie wynik
+pomiaru. Zakres opóźnień do 15 zawiera ponadto tylko jedną wielokrotność ośmiu,
+więc nie pozwala sprawdzić, czy efekt powtarza się dla opóźnień 16 i 24.
+
+Zależność o takiej wielkości jest statystycznie istotna, lecz praktycznie
+niewielka. Gdyby była jedyną, obniżałaby min-entropię warunkową o około
+$R/\ln 2 \approx 1{,}7 \cdot 10^{-3}$ bita na bit według przybliżenia
+\eqref{eq:przyblizenia}, a entropię Shannona o około $10^{-6}$ bita na bit.
+
+Analiza autokorelacji pełni w badaniach rolę testu kontrolnego, który pozwala
+wychwycić problemy implementacyjne jeszcze przed bardziej rozbudowanymi
+badaniami statystycznymi, a po każdej zmianie konfiguracji układu FPGA daje
+szybkie porównanie. Uzyskany wynik nie wskazuje na błąd implementacji,
+wyznacza natomiast kierunek dalszej analizy, którą przedstawiono w kolejnych
+podrozdziałach dotyczących strumienia poddanego wybielaniu oraz
+dwuwymiarowych map opóźnień.
 
 \FloatBarrier
 
-\subsection{Wyniki pomiaru dla 8 oscylatorów rozproszonych w strukturze układu}
+\subsection{Wyniki pomiaru dla 8 oscylatorów rozproszonych ręcznie}
 
-W poprzedniej konfiguracji oscylatory zostały rozmieszczone automatycznie, bez narzucenia
-ograniczeń położenia, w efekcie czego narzędzie implementacyjne umieściło je w zwartym
-obszarze struktury. Takie sąsiedztwo jest niekorzystne z punktu widzenia jakości źródła
-entropii, ponieważ oscylatory położone blisko siebie pracują w niemal identycznych
-warunkach temperaturowych i zasilania, a dodatkowo pozostają podatne na wzajemne
-oddziaływanie poprzez sprzężenia pojemnościowe i wspólną sieć dystrybucji zasilania.
-Zjawiska te mogą prowadzić do częściowej synchronizacji przebiegów, co obniża efektywną
-liczbę niezależnych źródeł szumu poniżej liczby zaimplementowanych oscylatorów.
-Rozproszenie struktur w obrębie układu ma na celu ograniczenie tych zależności oraz
-zróżnicowanie lokalnych warunków pracy poszczególnych pierścieni.
+Dla serii o długości $N = 10\,485\,760$ bitów wyznaczono współczynniki $R(\tau)$
+dla opóźnień od 0 do 15 po ręcznym rozproszeniu oscylatorów w strukturze układu.
+Przebieg współczynnika w funkcji opóźnienia przedstawiono na
+rysunku~\ref{fig:autokorelacja_rozproszone}.
 
-Przebieg współczynnika autokorelacji dla konfiguracji z oscylatorami rozproszonymi
-przedstawiono na rysunku~\ref{fig:autokorelacja_rozproszone}, natomiast dokładne wartości
-liczbowe zestawiono w tabeli~\ref{tab:autokorelacja_rozproszone}.
-
-\begin{figure}[htbp]
+\begin{figure}[ht]
     \centering
     \includegraphics[width=0.9\textwidth]{gfx/spread_ac.png}
-    \caption{Autokorelacja strumienia bitów dla oscylatorów rozproszonych w strukturze
-    układu, opóźnienia od 0 do 15}
+    \caption{Autokorelacja strumienia bitów dla oscylatorów rozproszonych
+    w strukturze układu, opóźnienia od 0 do 15}
     \label{fig:autokorelacja_rozproszone}
 \end{figure}
 
-\begin{table}[htbp]
+Dokładne wartości liczbowe zestawiono w tabeli~\ref{tab:autokorelacja_rozproszone}.
+
+\begin{table}[ht]
     \centering
     \caption{Wartości współczynników autokorelacji dla oscylatorów rozproszonych
     w strukturze układu}
@@ -839,44 +855,64 @@ liczbowe zestawiono w tabeli~\ref{tab:autokorelacja_rozproszone}.
 \end{table}
 
 Uzyskany wynik różni się zasadniczo od poprzedniego. W zakresie opóźnień od 1 do 5
-występują wyraźnie ujemne współczynniki autokorelacji, osiągające wartość
-$-0{,}084080$ dla opóźnienia równego 4. Przy długości serii $N = 10\,485\,760$ bitów
-odchylenie standardowe współczynnika dla strumienia w pełni losowego wynosi
-$\sigma \approx 3{,}1 \cdot 10^{-4}$, wobec czego zaobserwowana wartość odpowiada
-około 270-krotności tego poziomu. Jest to zależność jednoznacznie istotna statystycznie,
-a nie efekt naturalnych fluktuacji. Warto zaznaczyć, że wykryte odchylenia mają znak
-ujemny, przez co nie mogą być wyjaśnione ewentualną nierównowagą liczby zer i jedynek,
-gdyż niezerowa wartość średnia strumienia przesuwałaby współczynniki w kierunku wartości
-dodatnich.
+występują wyraźnie ujemne współczynniki, a najsilniejszy z nich, dla opóźnienia 4,
+wynosi $R = -0{,}084080$. Jest to wartość duża zarówno w sensie statystycznym, jak
+i praktycznym. Odchylenie standardowe współczynnika dla strumienia w pełni losowego
+wynosi $\sigma = 1/\sqrt{N} \approx 3{,}1 \cdot 10^{-4}$, więc wynik odpowiada około
+270-krotności tego poziomu i jest około 70 razy większy od największego współczynnika
+w poprzedniej konfiguracji. Prawdopodobieństwo zgodności dwóch bitów odległych o cztery
+pozycje wynosi $(1+R)/2 \approx 0{,}458$. Obserwator, który zna bit sprzed czterech
+pozycji i zakłada, że bieżący bit jest jego przeciwieństwem, trafia więc z
+prawdopodobieństwem około $0{,}542$. Stosując przybliżenie \eqref{eq:przyblizenia} do
+rozkładu bitu pod warunkiem znajomości tamtego bitu, z $\varepsilon = |R|/2$,
+otrzymuje się obniżenie min-entropii o około $0{,}12$ bita na bit i entropii Shannona
+o około $5 \cdot 10^{-3}$ bita na bit. Dotyczy to jednego opóźnienia. Opóźnienia od 1
+do 7 działają łącznie, więc strata całkowita jest większa, a jej wielkość wymaga
+estymacji z wykorzystaniem wielu poprzednich bitów.
 
-Charakter zaobserwowanej zależności wskazuje na skłonność strumienia do naprzemiennej
-zmiany wartości bitów w krótkiej skali. Współczynniki narastają w wartości bezwzględnej
-od opóźnienia 1 do 4, po czym maleją, a dla opóźnienia 7 przyjmują wartość dodatnią
-$+0{,}011959$, co odpowiada blisko 40-krotności odchylenia standardowego. Taki przebieg,
-złożony z ujemnego obszaru zakończonego dodatnim maksimum, jest typowy dla strumienia
-o częściowo okresowej strukturze, w którym kolejne bity nie są generowane niezależnie,
-lecz w powtarzalnym porządku wynikającym z pracy układu ekstrakcji. Ponieważ bity
-zapisywane są do bufora w stałej kolejności numerów kanałów, a dla pojedynczego
-oscylatora zbocza narastające i opadające występują naprzemiennie, uporządkowanie
-oscylatorów według częstotliwości pracy przekłada się bezpośrednio na uporządkowanie
-wartości w strumieniu wyjściowym. Zależność ta ma zatem źródło w warstwie serializacji
-oraz w relacjach częstotliwości pomiędzy poszczególnymi pierścieniami, a nie w samym
-rozproszeniu struktur w obrębie układu.
+Współczynniki w zakresie od 1 do 6 mają znak ujemny, co ma znaczenie diagnostyczne.
+Współczynnik $R$ liczony bez centrowania zawiera według \eqref{eq:ac-przyblizenie}
+składnik $4\varepsilon^2$, który przy dowolnym obciążeniu strumienia może przesunąć
+wartości wyłącznie w stronę dodatnią. Wartości ujemnych nie można więc wyjaśnić
+nierównowagą liczby zer i jedynek. Wskazują one na rzeczywistą skłonność kolejnych
+bitów do przyjmowania przeciwnych wartości.
 
-Dla opóźnień od 8 do 15 wartości współczynników nie przekraczają dwukrotności odchylenia
-standardowego i pozostają w granicach naturalnych fluktuacji, co oznacza, że wykryta
-zależność ma zasięg ograniczony do kilku najbliższych pozycji i nie prowadzi do
-periodyczności w dłuższej skali. Nie odnotowano również wzmocnienia dla opóźnienia
-równego 8, obecnego w poprzedniej konfiguracji, co potwierdza, że zmiana rozmieszczenia
-oscylatorów wpłynęła na strukturę strumienia, jednak przesunęła obserwowane zależności
-w obszar mniejszych opóźnień, zamiast je usunąć.
+Wartości bezwzględne rosną od opóźnienia 1 do 4, po czym maleją. Dla opóźnienia 6
+współczynnik jest bliski zeru ($-0{,}001822$, około $6\sigma$, czyli o dwa rzędy
+wielkości mniej niż maksimum), a dla opóźnienia 7 przyjmuje wartość dodatnią
+$+0{,}011959$, czyli blisko 40-krotność odchylenia standardowego. Zależność ma więc
+zasięg około siedmiu pozycji, a w jej obrębie bit zwykle przeciwstawia się bitom
+poprzedzającym go o trzy do pięciu pozycji, natomiast zgadza się z bitem sprzed siedmiu.
 
-Wynik ten należy uznać za istotny z punktu widzenia dalszych badań. Pokazuje on, że
-poprawa warunków pracy samych źródeł entropii nie jest wystarczająca, jeżeli sposób
-łączenia bitów pochodzących z wielu kanałów wprowadza własną, deterministyczną strukturę.
-Uzasadnia to konieczność zastosowania etapu korekcji strumienia, którego skuteczność
-zbadano w kolejnym podrozdziale, oraz analizy dwuwymiarowych map opóźnień, pozwalającej
-ocenić, czy wykryta zależność obejmuje również poziom całych słów.
+Dla opóźnień od 8 do 15 wartości współczynników mieszczą się w granicach
+$\pm 2\sigma$ z jednym wyjątkiem. Dla opóźnienia 9 wartość $-0{,}000635$ wynosi
+$2{,}06\sigma$, co przy ośmiu sprawdzanych opóźnieniach zdarza się przypadkowo
+z prawdopodobieństwem około $0{,}3$ i nie świadczy o zależności. Wykryta zależność nie
+prowadzi więc do periodyczności w dłuższej skali. Nie ma też wzmocnienia dla
+opóźnienia 8, obecnego w poprzedniej konfiguracji. Zmiana rozmieszczenia zmieniła
+zatem strukturę strumienia. Zależności nie usunęła, lecz zastąpiła ją inną, o około
+70 razy większej amplitudzie i krótszym zasięgu.
+
+Prawdopodobnego wyjaśnienia należy szukać w budowie modułu ekstrakcji entropii,
+a nie w pojedynczym oscylatorze. Bity jednego cyklu porównania dopisywane są do
+bufora w kolejności numerów kanałów. Bufor jest opróżniany tylko wtedy, gdy nadajnik
+UART zgłasza gotowość, co przy prędkości 9600 bodów zdarza się raz na około
+milisekundę. Przez ten czas moduł wykonuje dziesiątki tysięcy cykli porównania,
+więc bufor jest niemal zawsze pełny, a kolejne bity są odrzucane. Po zwolnieniu
+miejsca zapełniają je bity z pierwszych jednego lub dwóch cykli i to one trafiają do
+bajtu. Znaczna część bajtu składa się więc z bitów jednego cyklu, pochodzących z różnych
+kanałów w ustalonej kolejności, a nie z kolejnych chwil pracy jednego oscylatora.
+Zależności zaobserwowane w strumieniu odzwierciedlałyby wtedy relacje między kanałami
+w obrębie jednego cyklu oraz kolejność ich dopisywania. Jest to hipoteza oparta na
+budowie modułu i spójna z przebiegiem współczynników, lecz nie potwierdzona pomiarem.
+Można ją sprawdzić, wyznaczając autokorelację osobno dla każdej pozycji bitu w bajcie
+albo rejestrując strumień po usunięciu ograniczenia przepustowości, na przykład po
+zwiększeniu prędkości UART.
+
+Wykryta zależność dotyczy strumienia wyjściowego, a nie wprost oscylatorów. Czy same
+oscylatory są wzajemnie niezależne, rozstrzygnęłaby dopiero korelacja wzajemna
+nieprzetworzonych próbek poszczególnych kanałów, której z zarejestrowanego strumienia
+nie można wyznaczyć.
 
 \FloatBarrier
 
@@ -888,22 +924,64 @@ do modułu ekstrakcji trafia nadal osiem sygnałów, a przepustowość generator
 niezmieniona. Rozmieszczenie struktur w obrębie układu ustalono ręcznie, tak aby
 oscylatory tworzące jedną parę znajdowały się w odległych obszarach logiki.
 
-Zastosowanie operacji XOR do łączenia wyjść ma dwie zasadnicze zalety. Po pierwsze,
-odchylenie prawdopodobieństwa sygnału wynikowego jest iloczynem odchyleń sygnałów
-wejściowych, wobec czego połączenie dwóch niedoskonałych źródeł daje sygnał o rozkładzie
-bliższym równomiernemu niż każde z nich osobno. Po drugie, przewidzenie wartości sygnału
-wynikowego wymaga znajomości stanu obu oscylatorów jednocześnie, co ogranicza wpływ
-okresowego zachowania pojedynczego pierścienia na strumień wyjściowy. Rozdzielenie
-przestrzenne oscylatorów tworzących parę jest przy tym warunkiem skuteczności tego
-rozwiązania, ponieważ w przypadku struktur położonych blisko siebie wzajemne
-oddziaływanie mogłoby prowadzić do ich częściowej synchronizacji, a operacja XOR na dwóch
-skorelowanych sygnałach nie wnosi dodatkowej entropii.
+Zastosowanie operacji XOR do łączenia wyjść ma dwie zasadnicze zalety, które można
+opisać ilościowo. Niech $b_1$ i $b_2$ będą niezależnymi bitami, a
+$\varepsilon_i = P(b_i = 1) - \tfrac12$ ich obciążeniami, czyli odchyleniami
+prawdopodobieństwa jedynki od wartości $1/2$, tak jak we wzorze \eqref{eq:bias}.
+Bit wynikowy $y = b_1 \oplus b_2$ jest jedynką wtedy, gdy dokładnie jeden z bitów
+wejściowych jest jedynką, więc
+%
+\begin{equation}
+  P(y = 1)
+  = \left(\tfrac12 + \varepsilon_1\right)\left(\tfrac12 - \varepsilon_2\right)
+  + \left(\tfrac12 - \varepsilon_1\right)\left(\tfrac12 + \varepsilon_2\right)
+  = \tfrac12 - 2\varepsilon_1\varepsilon_2 ,
+  \label{eq:xor-p}
+\end{equation}
+%
+a obciążenie sygnału wynikowego wynosi
+%
+\begin{equation}
+  \varepsilon_y = -2\,\varepsilon_1\varepsilon_2 ,
+  \qquad
+  |\varepsilon_y| = 2\,|\varepsilon_1|\,|\varepsilon_2| .
+  \label{eq:xor-bias}
+\end{equation}
+%
+Zależność ta jest szczególnym przypadkiem lematu o nakładaniu
+\cite{matsui1993linear}.
+
+Po pierwsze, obciążenie sygnału wynikowego jest iloczynem obciążeń sygnałów
+wejściowych, a nie ich sumą, więc połączenie dwóch niedoskonałych źródeł daje sygnał
+o rozkładzie bliższym równomiernemu niż każde z nich osobno. Na przykład dla
+$\varepsilon_1 = \varepsilon_2 = 0{,}05$ wzór \eqref{eq:xor-bias} daje
+$|\varepsilon_y| = 0{,}005$. Min-entropia rośnie wówczas z $0{,}862$ do $0{,}986$
+bita na bit, zgodnie z \eqref{eq:minentropia}.
+
+Po drugie, w kodowaniu $\pm 1$ operacja XOR odpowiada mnożeniu sygnałów (z dokładnością
+do znaku, który znika przy iloczynie dwóch próbek). Jeżeli oba sygnały są niezależne
+i stacjonarne, to współczynnik z \eqref{eq:ac-kod} dla sygnału wynikowego jest iloczynem
+współczynników sygnałów wejściowych:
+%
+\begin{equation}
+  R_y(\tau) = R_1(\tau)\,R_2(\tau) .
+  \label{eq:xor-ac}
+\end{equation}
+%
+Ponieważ dla $\tau > 0$ zachodzi $|R_i(\tau)| < 1$, zależności czasowe pojedynczego
+pierścienia, na przykład jego okresowość, są w sygnale wynikowym tłumione.
+
+Oba wzory wymagają jednak niezależności sygnałów wejściowych. Rozdzielenie przestrzenne
+oscylatorów tworzących parę jest więc warunkiem skuteczności tego rozwiązania. W
+przypadku struktur położonych blisko siebie wzajemne oddziaływanie mogłoby prowadzić do
+ich częściowej synchronizacji, a w skrajnym przypadku dwóch identycznych sygnałów wynik
+operacji XOR jest stałym zerem. Dla sygnałów częściowo skorelowanych korzyść z łączenia
+maleje.
 
 Przebieg współczynnika autokorelacji dla omawianej konfiguracji przedstawiono na
-rysunku~\ref{fig:autokorelacja_xor}, natomiast dokładne wartości liczbowe zestawiono
-w tabeli~\ref{tab:autokorelacja_xor}.
+rysunku~\ref{fig:autokorelacja_xor}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{gfx/xor_ac.png}
     \caption{Autokorelacja strumienia bitów dla 16 oscylatorów łączonych parami operacją
@@ -911,7 +989,9 @@ w tabeli~\ref{tab:autokorelacja_xor}.
     \label{fig:autokorelacja_xor}
 \end{figure}
 
-\begin{table}[htbp]
+Dokładne wartości liczbowe zestawiono w tabeli~\ref{tab:autokorelacja_xor}.
+
+\begin{table}[H]
     \centering
     \caption{Wartości współczynników autokorelacji dla 16 oscylatorów łączonych parami
     operacją XOR}
@@ -937,11 +1017,7 @@ Zmiana konfiguracji przyniosła wyraźną poprawę w stosunku do poprzedniego po
 Największa wartość bezwzględna współczynnika dla opóźnień większych od zera wynosi
 $0{,}003030$ i występuje dla opóźnienia równego 3, podczas gdy w konfiguracji bez
 łączenia wyjść operacją XOR wartość skrajna sięgała $0{,}084080$. Amplituda
-zaobserwowanych zależności zmalała zatem blisko dwudziestoośmiokrotnie. Należy przy tym
-zwrócić uwagę, że zakres pionowej osi dolnego wykresu na
-rysunku~\ref{fig:autokorelacja_xor} jest dobierany automatycznie do zakresu danych
-i wynosi w tym przypadku około $\pm 3 \cdot 10^{-3}$, wobec czego bezpośrednie porównanie
-wizualne obu rysunków bez uwzględnienia podziałki prowadziłoby do błędnych wniosków.
+zaobserwowanych zależności zmalała zatem blisko dwudziestoośmiokrotnie.
 
 Wykryte odchylenia pozostają jednak istotne statystycznie. Przy odchyleniu standardowym
 $\sigma \approx 3{,}1 \cdot 10^{-4}$ współczynniki dla opóźnień od 2 do 6 odpowiadają
@@ -952,18 +1028,20 @@ ujemne, co odpowiadało skłonności do naprzemiennej zmiany wartości bitów. O
 występuje wyraźny podział: dla opóźnień od 2 do 4 współczynniki są dodatnie, natomiast
 dla opóźnień 5 i 6 ujemne, przy praktycznym zaniku zależności dla opóźnienia 7
 i wszystkich większych. Taki przebieg, obejmujący zwarty obszar zależności dodatnich
-przechodzących w ujemne, wskazuje na obecność składowej o okresie rzędu ośmiu pozycji
-w strumieniu wyjściowym, a więc odpowiadającej długości pojedynczego bajtu i liczbie
-kanałów doprowadzonych do modułu ekstrakcji.
+przechodzących w ujemne i zanikający po siedmiu pozycjach, świadczy o strukturze
+o zasięgu rzędu jednego bajtu, a więc zbliżonym do liczby kanałów doprowadzonych do
+modułu ekstrakcji. Nie jest to okresowość w ścisłym sensie, ponieważ nie obserwuje się
+kolejnego maksimum.
 
-Obserwacja ta potwierdza wniosek sformułowany w poprzednim podrozdziale, zgodnie z którym
-zasadnicza część wykrywanych zależności ma źródło w warstwie łączenia bitów pochodzących
-z wielu kanałów, a nie w jakości samych źródeł entropii. Podwojenie liczby oscylatorów
-oraz łączenie ich wyjść operacją XOR poprawiło właściwości poszczególnych sygnałów
-wejściowych, co przełożyło się na znaczną redukcję amplitudy zależności, nie usunęło
-jednak deterministycznej struktury wynikającej ze stałej kolejności zapisu kanałów do
-bufora. Całkowite wyeliminowanie tego efektu wymagałoby modyfikacji sposobu serializacji
-lub zastosowania korekcji strumienia, której skuteczność zbadano w kolejnym podrozdziale.
+Obserwacja ta jest zgodna z hipotezą z poprzedniego podrozdziału, zgodnie z którą
+zasadnicza część wykrywanych zależności ma źródło w sposobie łączenia bitów
+pochodzących z wielu kanałów, a nie w jakości samych źródeł entropii. Podwojenie liczby
+oscylatorów oraz łączenie ich wyjść operacją XOR poprawiło właściwości poszczególnych
+sygnałów wejściowych, co zgodnie z zależnością \eqref{eq:xor-ac} przełożyło się na
+znaczną redukcję amplitudy zależności, nie usunęło jednak struktury wynikającej ze
+sposobu serializacji. Całkowite wyeliminowanie tego efektu wymagałoby modyfikacji
+sposobu serializacji lub zastosowania korekcji strumienia, której skuteczność zbadano
+w kolejnym podrozdziale.
 
 \FloatBarrier
 
@@ -1060,6 +1138,306 @@ podsumowującym.
 
 \FloatBarrier
 
+\section{Badanie odchylenia rozkładu bitów}
+
+Dla każdej serii wyznaczono liczby zer i jedynek, prawdopodobieństwa $P(0)$
+i~$P(1)$ oraz obciążenie $\varepsilon = P(1) - 0{,}5$ zgodnie ze wzorem
+\eqref{eq:bias}. Średnia w~kodowaniu $\{-1,+1\}$ jest równa $2\varepsilon$,
+odchylenie standardowe estymatora wynosi $\sigma = 1/(2\sqrt{N})$, a~odchylenie
+wyrażone w~jednostkach $\sigma$ jest statystyką $Z$ testu monobitowego
+\eqref{eq:monobit}. Wartość $p$ obliczono według tego samego wzoru i~porównano
+z~poziomem istotności $\alpha = 0{,}01$. Odchylenie $\sigma$ dotyczy częstości
+jedynek i~jest dwukrotnie mniejsze niż odchylenie współczynnika autokorelacji
+dla serii tej samej długości.
+
+\subsection{Wyniki dla 8 oscylatorów rozmieszczonych automatycznie}
+
+Badanie wykonano dla strumienia o~długości $10\,485\,760$ bitów, pochodzącego
+z~konfiguracji obejmującej osiem oscylatorów pierścieniowych rozmieszczonych
+automatycznie przez narzędzie implementacyjne, bez łączenia wyjść operacją XOR
+i~bez wybielania. Wyniki zestawiono w~tabeli~\ref{tab:bias_ro8}.
+
+\begin{table}[H]
+    \centering
+    \caption{Wyniki badania odchylenia rozkładu dla 8 oscylatorów rozmieszczonych
+    automatycznie}
+    \label{tab:bias_ro8}
+    \small
+    \begin{tabular}{lr}
+        \toprule
+        Parametr & Wartość \\
+        \midrule
+        Długość serii            & $10\,485\,760$ \\
+        Liczba zer               & $5\,224\,958$ \\
+        Liczba jedynek           & $5\,260\,802$ \\
+        $P(0)$                   & $0{,}498291$ \\
+        $P(1)$                   & $0{,}501709$ \\
+        Bias $P(1)-0{,}5$        & $+0{,}001709$ \\
+        Średnia w $\{-1,+1\}$    & $+0{,}003418$ \\
+        $\sigma$                 & $1{,}54 \cdot 10^{-4}$ \\
+        Odchylenie w jednostkach $\sigma$ & $11{,}1$ \\
+        Wartość $p$              & $1{,}8 \cdot 10^{-28}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+W badanym strumieniu występuje przewaga jedynek nad zerami, wynosząca $35\,844$
+bity. W~ujęciu bezwzględnym odchylenie jest niewielkie, ponieważ
+$P(1) = 0{,}501709$, a~więc odstępstwo od wartości idealnej wynosi około $0{,}17$
+punktu procentowego. Ocena istotności tego wyniku wymaga jednak odniesienia do
+długości serii. Odchylenie standardowe udziału jedynek dla źródła idealnie
+zrównoważonego wynosi $\sigma = 1/(2\sqrt{N}) \approx 1{,}54 \cdot 10^{-4}$,
+wobec czego stwierdzone odchylenie odpowiada $11{,}1\sigma$.
+
+Wartość $p$ wynosi około $1{,}8 \cdot 10^{-28}$. Oznacza to, że prawdopodobieństwo
+zaobserwowania takiego odchylenia w~strumieniu pochodzącym ze źródła idealnie
+zrównoważonego jest praktycznie zerowe, a~test monobitowy przy poziomie
+istotności $\alpha = 0{,}01$ zostaje jednoznacznie odrzucony. Odchylenie ma zatem
+charakter systematyczny i~jest cechą badanej implementacji, a~nie efektem
+przypadkowych fluktuacji.
+
+Istotność statystyczna nie oznacza jednak dużego wpływu na entropię. Zgodnie
+z~przybliżeniem \eqref{eq:przyblizenia} takie obciążenie obniża min-entropię
+o~około $2\varepsilon/\ln 2 \approx 4{,}9 \cdot 10^{-3}$ bita na bit, a~entropię
+Shannona o~około $8 \cdot 10^{-6}$ bita na bit. Jest to strata mierzalna, ale
+niewielka.
+
+Kierunek odchylenia wynika ze sposobu kodowania zboczy. Zbocze narastające daje
+bit 0, a~opadające bit 1, więc przewaga jedynek oznacza, że w~strumieniu
+zarejestrowano więcej zboczy opadających niż narastających. Sama niesymetria
+wypełnienia sygnału oscylatora, wynikająca z~różnicy czasów propagacji obu
+zboczy w~generatorach funkcji, nie wystarcza jednak do wyjaśnienia tego wyniku.
+Gdy rozkład fazy oscylatora względem zegara próbkującego jest jednorodny, liczby
+przejść $0 \to 1$ i~$1 \to 0$ w~kolejnych próbkach są równe w~wartości
+oczekiwanej niezależnie od współczynnika wypełnienia. Wynika to z~równości
+$P(01) - P(10) = P(x_{t+1} = 1) - P(x_t = 1) = 0$. Asymetria zboczy wymaga więc
+dodatkowego mechanizmu, na przykład nierównomiernego rozkładu fazy wynikającego
+z~częściowej synchronizacji oscylatora do zegara lub zasilania albo
+nierównomiernego wyboru bitów przy zapełnionym buforze modułu ekstrakcji.
+Przedstawione wyniki nie pozwalają rozstrzygnąć, który z~nich występuje.
+
+Uzyskany wynik wskazuje, że strumień w~postaci surowej ma obciążenie istotne
+statystycznie, choć niewielkie pod względem entropii, więc zastosowanie etapu
+korekcji rozkładu jest uzasadnione. Korekcja metodą von Neumanna powinna je
+usunąć przy niemal minimalnej stracie przepustowości. Udział zachowanych par
+wynosi $2\hat{p}(1-\hat{p}) = \tfrac12 - 2\varepsilon^2 \approx 0{,}499994$,
+a~więc jest praktycznie nierozróżnialny od przypadku granicznego $\tfrac12$.
+Skuteczność tego rozwiązania, a~także wpływ liczby oscylatorów oraz łączenia ich
+wyjść operacją XOR na wielkość odchylenia, przedstawiono w~kolejnych
+podrozdziałach.
+
+\FloatBarrier
+
+\subsection{Wyniki dla 8 oscylatorów rozmieszczonych ręcznie}
+
+W kolejnej konfiguracji zachowano liczbę oscylatorów oraz długości ich łańcuchów
+inwerterów, zmieniając wyłącznie sposób rozmieszczenia struktur, które narzucono
+ręcznie w~oddalonych obszarach logiki programowalnej. Wyniki badania odchylenia
+rozkładu zestawiono w~tabeli~\ref{tab:bias_ro8_manual}.
+
+\begin{table}[H]
+    \centering
+    \caption{Wyniki badania odchylenia rozkładu dla 8 oscylatorów rozmieszczonych ręcznie}
+    \label{tab:bias_ro8_manual}
+    \small
+    \begin{tabular}{lr}
+        \toprule
+        Parametr & Wartość \\
+        \midrule
+        Długość serii            & $10\,485\,760$ \\
+        Liczba zer               & $5\,241\,251$ \\
+        Liczba jedynek           & $5\,244\,509$ \\
+        $P(0)$                   & $0{,}499845$ \\
+        $P(1)$                   & $0{,}500155$ \\
+        Bias $P(1)-0{,}5$        & $+0{,}000155$ \\
+        Średnia w $\{-1,+1\}$    & $+0{,}000311$ \\
+        $\sigma$                 & $1{,}54 \cdot 10^{-4}$ \\
+        Odchylenie w jednostkach $\sigma$ & $1{,}0$ \\
+        Wartość $p$              & $0{,}314356$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Zmiana rozmieszczenia oscylatorów przyniosła bardzo wyraźną poprawę w~tej
+metryce. Przewaga jedynek nad zerami zmalała z~$35\,844$ do $3\,258$ bitów,
+a~wartość biasu z~$+0{,}001709$ do $+0{,}000155$, czyli około jedenastokrotnie.
+Stwierdzone odchylenie odpowiada $1{,}0\sigma$, a~więc mieści się w~zakresie
+naturalnych fluktuacji statystycznych, jakich należy oczekiwać nawet od źródła
+idealnie zrównoważonego. Potwierdza to wartość $p$ równa $0{,}314$, znacznie
+przewyższająca przyjęty poziom istotności $\alpha = 0{,}01$: test monobitowy nie
+daje żadnych podstaw do odrzucenia hipotezy o~zrównoważeniu strumienia.
+Z~ufnością $95\%$ obciążenie nie przekracza $4{,}6 \cdot 10^{-4}$, czyli jest co
+najmniej trzykrotnie mniejsze niż w~konfiguracji poprzedniej, a~obniżenie
+min-entropii nie przekracza $1{,}3 \cdot 10^{-3}$ bita na bit.
+
+Wynik ten nie pozwala rozstrzygnąć, czy mechanizm odpowiedzialny za asymetrię
+w~poprzedniej konfiguracji zniknął, czy tylko osłabł. Przy odchyleniu rzędu
+$1\sigma$ kierunek odchylenia jest tak samo prawdopodobny jak przeciwny, więc jego
+zgodność z~poprzednim wynikiem nie niesie informacji. Możliwym wyjaśnieniem
+poprawy jest zróżnicowanie warunków pracy poszczególnych pierścieni po ich
+rozproszeniu w~strukturze układu. Jeżeli w~konfiguracji poprzedniej oscylatory
+zajmowały zwarty obszar, pracowały w~podobnych warunkach, a~ich odchylenia mogły
+mieć jednakowy kierunek i~sumować się w~strumieniu wyjściowym. Rozmieszczenie
+w~różnych obszarach struktury, obejmujących odrębne regiony zegarowe i~różne
+fragmenty sieci zasilania, mogło te odchylenia zróżnicować i~częściowo
+skompensować.
+
+\FloatBarrier
+
+\subsection{Wyniki dla 16 oscylatorów łączonych parami operacją XOR}
+
+W konfiguracji obejmującej szesnaście oscylatorów, których wyjścia łączone są
+parami operacją XOR, badanie odchylenia rozkładu przeprowadzono na strumieniu
+surowym, bez zastosowania wybielania. Wyniki zestawiono w~tabeli~\ref{tab:bias_ro16_xor}.
+
+\begin{table}[H]
+    \centering
+    \caption{Wyniki badania odchylenia rozkładu dla 16 oscylatorów łączonych parami
+    operacją XOR}
+    \label{tab:bias_ro16_xor}
+    \small
+    \begin{tabular}{lr}
+        \toprule
+        Parametr & Wartość \\
+        \midrule
+        Długość serii            & $10\,485\,760$ \\
+        Liczba zer               & $5\,241\,014$ \\
+        Liczba jedynek           & $5\,244\,746$ \\
+        $P(0)$                   & $0{,}499822$ \\
+        $P(1)$                   & $0{,}500178$ \\
+        Bias $P(1)-0{,}5$        & $+0{,}000178$ \\
+        Średnia w $\{-1,+1\}$    & $+0{,}000356$ \\
+        $\sigma$                 & $1{,}54 \cdot 10^{-4}$ \\
+        Odchylenie w jednostkach $\sigma$ & $1{,}2$ \\
+        Wartość $p$              & $0{,}249115$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Odnotowana przewaga jedynek nad zerami wynosi $3\,732$ bity, a~obciążenie
+$\varepsilon = P(1) - 0{,}5$ wynosi $+0{,}000178$, co odpowiada $1{,}2\sigma$.
+Wartość $p$ równa $0{,}249$ znacznie przewyższa przyjęty poziom istotności, wobec
+czego test monobitowy nie daje podstaw do odrzucenia hipotezy o~zrównoważeniu
+strumienia.
+
+Wynik ten jest praktycznie identyczny z~uzyskanym dla konfiguracji z~ośmioma
+oscylatorami rozmieszczonymi ręcznie. Obciążenie wyniosło tam $+0{,}000155$, czyli
+$1{,}0\sigma$ (tabela~\ref{tab:bias_ro8_manual}). Różnica między obiema wartościami
+mieści się w~granicach naturalnego
+rozrzutu i~nie pozwala stwierdzić, która konfiguracja jest w~tej metryce lepsza.
+Obserwacja ta wymaga komentarza, ponieważ na pierwszy rzut oka pozostaje
+w~sprzeczności z~oczekiwaniem teoretycznym. Połączenie dwóch niezależnych źródeł
+operacją XOR powinno prowadzić do zmniejszenia odchylenia w~sposób multiplikatywny.
+Zgodnie z~\eqref{eq:xor-bias} dla odchyleń $\varepsilon_1$ oraz $\varepsilon_2$
+odchylenie sygnału wynikowego wynosi $2|\varepsilon_1||\varepsilon_2|$, wobec czego
+dla wartości rzędu tysięcznych części oczekiwane odchylenie po operacji XOR
+powinno być mniejsze o~ponad dwa rzędy wielkości. Wzór dotyczy jednak obciążenia
+poziomu sygnału, a~w strumieniu mierzone jest zrównoważenie bitów kodujących
+zbocza, więc oczekiwanie ma charakter przybliżony.
+
+Wyjaśnieniem rozbieżności jest fakt, że dla obu konfiguracji stwierdzone
+odchylenie znajduje się już na poziomie naturalnego rozrzutu statystycznego
+wyznaczonego długością serii. Odchylenie standardowe
+$\sigma \approx 1{,}54 \cdot 10^{-4}$ stanowi w~tym przypadku granicę czułości
+pomiaru: nawet gdyby operacja XOR zredukowała odchylenie rzeczywiste do wartości
+pomijalnie małej, zmierzony bias pozostałby na poziomie rzędu jednego $\sigma$,
+ponieważ wynikałby wówczas wyłącznie z~losowego rozrzutu liczby jedynek
+w~skończonej próbie. Test monobitowy nie jest zatem zdolny rozróżnić tych dwóch
+konfiguracji przy zastosowanej długości serii. Rozróżnienie obciążenia rzędu
+$10^{-5}$ wymagałoby serii około $2{,}5 \cdot 10^{9}$ bitów, czyli przy prędkości
+9600 bodów nie krócej niż około 90 godzin akwizycji.
+
+Spośród trzech konfiguracji badanych bez wybielania jednoznacznie wyróżnia się
+tylko jedna: automatyczne rozmieszczenie oscylatorów prowadziło do odchylenia na
+poziomie $11\sigma$, natomiast obie konfiguracje z~rozmieszczeniem ręcznym dają
+wyniki nierozróżnialne od źródła zrównoważonego. Decydującym czynnikiem w~tej
+metryce okazał się zatem sposób rozmieszczenia struktur w~obrębie układu, a~nie
+liczba oscylatorów ani zastosowanie operacji XOR.
+
+\FloatBarrier
+
+\subsection{Wyniki dla 16 oscylatorów z wybielaniem metodą von Neumanna}
+
+Ostatni pomiar wykonano dla tej samej serii pomiarowej co poprzednio, poddanej
+wybielaniu metodą von Neumanna. Wyniki zestawiono w~tabeli~\ref{tab:bias_ro16_vn}.
+
+\begin{table}[H]
+    \centering
+    \caption{Wyniki badania odchylenia rozkładu dla 16 oscylatorów łączonych parami
+    operacją XOR, po wybielaniu metodą von Neumanna}
+    \label{tab:bias_ro16_vn}
+    \small
+    \begin{tabular}{lr}
+        \toprule
+        Parametr & Wartość \\
+        \midrule
+        Długość serii            & $2\,620\,032$ \\
+        Liczba zer               & $1\,308\,483$ \\
+        Liczba jedynek           & $1\,311\,549$ \\
+        $P(0)$                   & $0{,}499415$ \\
+        $P(1)$                   & $0{,}500585$ \\
+        Bias $P(1)-0{,}5$        & $+0{,}000585$ \\
+        Średnia w $\{-1,+1\}$    & $+0{,}001170$ \\
+        $\sigma$                 & $3{,}09 \cdot 10^{-4}$ \\
+        Odchylenie w jednostkach $\sigma$ & $1{,}9$ \\
+        Wartość $p$              & $0{,}058203$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Test monobitowy przy poziomie istotności $\alpha = 0{,}01$ nie daje podstaw do
+odrzucenia hipotezy o~zrównoważeniu strumienia, ponieważ wartość $p$ wynosi
+$0{,}058$. W~ujęciu bezwzględnym wartość biasu wzrosła jednak z~$+0{,}000178$ dla
+strumienia surowego do $+0{,}000585$ po wybielaniu, a~więc ponad trzykrotnie.
+Jest to obserwacja sprzeczna z~przeznaczeniem zastosowanej metody, która ma
+odchylenie rozkładu usuwać, a~nie zwiększać.
+
+Zasadnicza część tej rozbieżności ma charakter pozorny i~wynika ze skrócenia
+serii. Wybielanie zredukowało długość strumienia do jednej czwartej, wobec czego
+odchylenie standardowe wzrosło dwukrotnie, do $\sigma \approx 3{,}09 \cdot 10^{-4}$.
+Wyrażone w~jednostkach naturalnego rozrzutu odchylenie wynosi zatem $1{,}9\sigma$
+zamiast $1{,}2\sigma$, a~więc wzrost jest znacznie mniej wyraźny niż w~ujęciu
+bezwzględnym. Porównywanie wartości biasu pomiędzy seriami o~różnej długości bez
+takiego przeliczenia prowadziłoby do błędnych wniosków, ponieważ każde skrócenie
+danych z~definicji zwiększa oczekiwaną wartość bezwzględną zmierzonego odchylenia.
+
+Wartość $p = 0{,}058$ nie daje przy tym podstaw do stwierdzenia, że po wybielaniu
+pozostało jakiekolwiek obciążenie. Dla źródła idealnego typowe odchylenie wynosi
+$1\sigma$, a~odchylenie co najmniej tak duże jak zaobserwowane występuje w~około
+$6\%$ serii. Wynik nie przeczy więc gwarancji zrównoważenia, jaką daje metoda
+von Neumanna, i~nie wymaga wyjaśnienia innego niż rozrzut losowy.
+
+Przebieg samego wybielania potwierdza udział zachowanych bitów. Z~$5\,242\,880$
+par zachowano $2\,620\,032$, czyli $49{,}97\%$, co stanowi $24{,}99\%$ długości
+wejścia. Dla bitów niezależnych o~obciążeniu $\varepsilon \approx 1{,}8 \cdot 10^{-4}$
+oczekuje się według \eqref{eq:wydajnosc-vn} praktycznie dokładnie $25\%$ długości
+wejścia, więc niedobór około $2{,}7 \cdot 10^{-4}$ udziału par odpowiada około
+$1{,}2$ odchylenia standardowego i~nie wskazuje na odstępstwo. Wskaźnik ten jest
+natomiast zbyt mało czuły, by potwierdzać małe obciążenie, ponieważ zmienia się
+z~kwadratem obciążenia: wykrycie odstępstwa wymagałoby $\varepsilon \gtrsim 10^{-2}$.
+
+Gwarancja zrównoważenia wynika z~równości $P(01) = P(10)$. Zachodzi ona, gdy
+prawdopodobieństwo jedynki jest jednakowe na obu pozycjach pary, ponieważ różnica
+$P(10) - P(01)$ jest równa różnicy tych prawdopodobieństw. Niezależność bitów nie
+jest do tego potrzebna, jest natomiast potrzebna do tego, by sam ciąg wyjściowy
+był niezależny. W~strumieniu bajtowym pary zajmują zawsze pozycje $(0,1)$,
+$(2,3)$, $(4,5)$ i~$(6,7)$ w~obrębie bajtu, więc przy serializacji kanałów w~stałej
+kolejności prawdopodobieństwo jedynki mogłoby zależeć od pozycji w~bajcie, co
+naruszyłoby tę równość. Sprawdzenie polega na zliczeniu jedynek osobno dla każdej
+z~ośmiu pozycji w~bajcie. Dla zaobserwowanego odchylenia $1{,}9\sigma$ nie ma
+jednak podstaw, by zakładać, że efekt ten występuje.
+
+Wybielanie nie zmieniło wyniku testu monobitowego, ale poprawiło wynik pozostałych
+zastosowanych metod: mapy dwuwymiarowe wykazały spadek rozrzutu zliczeń z~około
+sześciu do niespełna trzech odchyleń standardowych, a~przebieg autokorelacji
+utracił uporządkowaną strukturę. Metoda von Neumanna okazała się więc skuteczna
+wobec tych odstępstw od losowości, których nie wykrywa test monobitowy, pozostając
+jednocześnie bez wyraźnego wpływu na samą wielkość odchylenia rozkładu, która
+w~konfiguracjach z~ręcznym rozmieszczeniem oscylatorów była już przed korekcją
+nierozróżnialna od naturalnego rozrzutu.
+
+\FloatBarrier
+
 \section{Analiza utworzonych słów bitowych za pomocą map 2D}
 
 Mapy dwuwymiarowe zastosowano w celu oceny właściwości statystycznych słów utworzonych z badanego 
@@ -1071,9 +1449,9 @@ Następnie ilość wystąpień poszczególnych par przedstawiano w postaci histo
 W przypadku generatora o dobrych właściwościach losowych rozkład punktów na mapie 2D powinien być 
 możliwie jednorodny, bez wyraźnych struktur geometrycznych, pasów oraz nadmiernej koncentracji 
 zliczeń w określonych obszarach. 
-Pojawienie się pasów pionowych lub poziomych wskazuje, że niektóre wartości słów występują 
-częściej od innych, co świadczy o nierównomierności rozkładu. 
-Z kolei zwiększona koncentracja punktów w pobliżu przekątnej może sugerować istnienie zależności 
+Pojawienie się pasów pionowych lub poziomych wskazuje, że niektóre pary słów występują 
+częściej od innych, co świadczy o korelacjach czasowych. 
+Z kolei zwiększona koncentracja punktów sugerować istnienie zależności 
 pomiędzy kolejnymi słowami, a więc obecność korelacji czasowej w analizowanym ciągu.
 
 \FloatBarrier
@@ -1105,8 +1483,7 @@ zliczenia wynosi $10\,240$, a~odpowiadające jej odchylenie standardowe rozkład
 około $101$ zliczeń. Odnotowany zakres, obejmujący przedział od około $9\,400$ do
 $11\,100$, odpowiada zatem odchyleniu skrajnemu na poziomie $8{,}5$ odchylenia
 standardowego. Rozkład wartości słów odbiega więc od równomiernego w~sposób jednoznacznie
-istotny statystycznie, choć skala tego odstępstwa jest znacznie mniejsza niż stwierdzona
-później dla konfiguracji z~ręcznym rozmieszczeniem oscylatorów.
+istotny statystycznie, dla tej konfiguracji.
 
 Struktura pasowa jest praktycznie identyczna dla obu badanych opóźnień, co oznacza, że
 wynika ona z~rozkładu prawdopodobieństwa pojedynczych słów, a~nie z~zależności pomiędzy
@@ -1329,286 +1706,6 @@ skracającemu dane do jednej czwartej długości, ograniczenie to staje się szc
 wyraźne. Z tego względu w dalszej ocenie badanego generatora za miarodajne przyjęto
 wyniki uzyskane dla słów czterobitowych, natomiast mapy dla słów ośmiobitowych
 traktowano jako uzupełnienie o charakterze jakościowym.
-
-\FloatBarrier
-
-\section{Badanie odchylenia rozkładu bitów}
-
-Kolejnym etapem praktycznej oceny generatora było zbadanie odchylenia rozkładu, czyli
-nierównowagi pomiędzy liczbą zer i jedynek w uzyskanym strumieniu bitów. Badanie to
-sprawdza, czy wyjście układu FPGA nie wykazuje przesunięcia w stronę jednej z wartości
-logicznych. Jest to istotne szczególnie na etapie uruchamiania i strojenia generatora,
-ponieważ asymetria może wskazywać na wpływ implementacji sprzętowej, sposobu próbkowania
-lub parametrów zastosowanych oscylatorów pierścieniowych na jakość źródła entropii.
-
-\subsection{Wyniki dla 8 oscylatorów rozmieszczonych automatycznie}
-
-Badanie wykonano dla strumienia o długości $10\,485\,760$ bitów, pochodzącego
-z~konfiguracji obejmującej osiem oscylatorów pierścieniowych rozmieszczonych
-automatycznie przez narzędzie implementacyjne, bez łączenia wyjść operacją XOR
-i~bez wybielania. Wyniki zestawiono w~tabeli~\ref{tab:bias_ro8}.
-
-\begin{table}[ht]
-    \centering
-    \caption{Wyniki badania odchylenia rozkładu dla 8 oscylatorów rozmieszczonych
-    automatycznie}
-    \label{tab:bias_ro8}
-    \small
-    \begin{tabular}{lr}
-        \toprule
-        Parametr & Wartość \\
-        \midrule
-        Długość serii            & $10\,485\,760$ \\
-        Liczba zer               & $5\,224\,958$ \\
-        Liczba jedynek           & $5\,260\,802$ \\
-        $P(0)$                   & $0{,}498291$ \\
-        $P(1)$                   & $0{,}501709$ \\
-        Bias $P(1)-0{,}5$        & $+0{,}001709$ \\
-        Średnia w $\{-1,+1\}$    & $+0{,}003418$ \\
-        $\sigma$                 & $1{,}54 \cdot 10^{-4}$ \\
-        Odchylenie w jednostkach $\sigma$ & $11{,}1$ \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-W badanym strumieniu występuje przewaga jedynek nad zerami, wynosząca $35\,844$ bity.
-W~ujęciu bezwzględnym odchylenie jest niewielkie, ponieważ $P(1) = 0{,}501709$, a~więc
-odstępstwo od wartości idealnej wynosi około $0{,}17\%$. Ocena istotności tego wyniku
-wymaga jednak odniesienia do długości serii. Odchylenie standardowe udziału jedynek dla
-źródła idealnie zrównoważonego wynosi $\sigma = 1/(2\sqrt{N}) \approx 1{,}54 \cdot
-10^{-4}$, wobec czego stwierdzone odchylenie odpowiada $11{,}1$ odchylenia standardowego.
-
-Wartość $p$ wykazana w~tabeli jako zero jest w~istocie wynikiem zaokrąglenia do sześciu
-miejsc po przecinku; rzeczywista wartość jest rzędu $10^{-28}$. Oznacza to, że
-prawdopodobieństwo zaobserwowania takiego odchylenia w~strumieniu pochodzącym ze źródła
-idealnie zrównoważonego jest praktycznie zerowe, a~test monobitowy przy poziomie
-istotności $\alpha = 0{,}01$ zostaje jednoznacznie odrzucony. Odchylenie ma zatem
-charakter systematyczny i~jest cechą badanej implementacji, a~nie efektem przypadkowych
-fluktuacji.
-
-Kierunek odchylenia jest zgodny z~oczekiwaniami wynikającymi z~zasady działania
-zastosowanego układu ekstrakcji entropii. Bity generowane są na podstawie detekcji zboczy,
-przy czym zbocze narastające interpretowane jest jako zero, a~opadające jako jedynka.
-Przewaga jedynek oznacza więc, że w~próbkowanym przebiegu częściej rejestrowane były
-zbocza opadające, co odpowiada niesymetrycznemu współczynnikowi wypełnienia sygnału
-z~oscylatorów. Zjawisko to wynika z~różnicy czasów propagacji zbocza narastającego
-i~opadającego w~generatorach funkcji realizujących łańcuch inwerterów i~jest właściwością
-technologiczną struktury układu, niezależną od sposobu opisu logiki w~języku HDL.
-
-Uzyskany wynik wskazuje, że strumień w~postaci surowej nie spełnia wymagań stawianych
-źródłom losowości i~wymaga zastosowania etapu korekcji rozkładu. Jednocześnie stwierdzone
-odchylenie jest na tyle niewielkie w~ujęciu bezwzględnym, że korekcja metodą von Neumanna
-powinna je usunąć przy niemal minimalnej stracie przepustowości, ponieważ udział par
-odrzucanych rośnie z~kwadratem odchylenia i~dla wartości rzędu tysięcznych części pozostaje
-praktycznie nierozróżnialny od przypadku granicznego. Skuteczność tego rozwiązania,
-a~także wpływ liczby oscylatorów oraz łączenia ich wyjść operacją XOR na wielkość
-odchylenia, przedstawiono w~kolejnych podrozdziałach.
-
-\FloatBarrier
-
-\subsection{Wyniki dla 8 oscylatorów rozmieszczonych ręcznie}
-
-W kolejnej konfiguracji zachowano liczbę oscylatorów oraz długości ich łańcuchów
-inwerterów, zmieniając wyłącznie sposób rozmieszczenia struktur, które narzucono ręcznie
-w~oddalonych obszarach logiki programowalnej. Wyniki badania odchylenia rozkładu
-zestawiono w~tabeli~\ref{tab:bias_ro8_manual}.
-
-\begin{table}[ht]
-    \centering
-    \caption{Wyniki badania odchylenia rozkładu dla 8 oscylatorów rozmieszczonych ręcznie}
-    \label{tab:bias_ro8_manual}
-    \small
-    \begin{tabular}{lr}
-        \toprule
-        Parametr & Wartość \\
-        \midrule
-        Długość serii            & $10\,485\,760$ \\
-        Liczba zer               & $5\,241\,251$ \\
-        Liczba jedynek           & $5\,244\,509$ \\
-        $P(0)$                   & $0{,}499845$ \\
-        $P(1)$                   & $0{,}500155$ \\
-        Bias $P(1)-0{,}5$        & $+0{,}000155$ \\
-        Średnia w $\{-1,+1\}$    & $+0{,}000311$ \\
-        $\sigma$                 & $1{,}54 \cdot 10^{-4}$ \\
-        Odchylenie w jednostkach $\sigma$ & $1{,}0$ \\
-        Wartość $p$              & $0{,}314356$ \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-Zmiana rozmieszczenia oscylatorów przyniosła bardzo wyraźną poprawę w~tej metryce.
-Przewaga jedynek nad zerami zmalała z~$35\,844$ do $3\,258$ bitów, a~wartość biasu
-z~$+0{,}001709$ do $+0{,}000155$, czyli ponad jedenastokrotnie. Stwierdzone odchylenie
-odpowiada dokładnie jednemu odchyleniu standardowemu, a~więc mieści się w~zakresie
-naturalnych fluktuacji statystycznych, jakich należy oczekiwać nawet od źródła idealnie
-zrównoważonego. Potwierdza to wartość $p$ równa $0{,}314$, znacznie przewyższająca
-przyjęty poziom istotności $\alpha = 0{,}01$: test monobitowy nie daje żadnych podstaw
-do odrzucenia hipotezy o~zrównoważeniu strumienia.
-
-Wynik ten jest tym bardziej wart uwagi, że kierunek odchylenia pozostał niezmieniony,
-a~zmieniła się wyłącznie jego skala. Wskazuje to, że mechanizm odpowiedzialny za
-asymetrię, czyli różnica czasów propagacji obu rodzajów zboczy, nie zniknął, lecz jego
-wpływ na strumień wypadkowy uległ znacznemu osłabieniu. Prawdopodobnym wyjaśnieniem jest
-zróżnicowanie warunków pracy poszczególnych pierścieni po ich rozproszeniu w~strukturze
-układu. W~konfiguracji poprzedniej, w~której narzędzie implementacyjne umieściło wszystkie
-oscylatory w~zwartym obszarze, struktury pracowały w~niemal identycznych warunkach,
-wobec czego charakterystyczne dla nich odchylenia miały jednakowy kierunek i~sumowały się
-w~strumieniu wyjściowym. Rozmieszczenie w~różnych obszarach struktury, obejmujących
-odrębne regiony zegarowe i~różne fragmenty sieci dystrybucji zasilania, prowadzi do
-zróżnicowania tych odchyleń, które w~sumie po ośmiu kanałach częściowo się kompensują.
-
-Zestawienie tego wyniku z~wcześniejszą analizą autokorelacji prowadzi do obserwacji
-istotnej dla całej pracy. Dla omawianej konfiguracji test monobitowy nie wykazuje
-odstępstwa od losowości, natomiast badanie autokorelacji ujawniło w~tym samym strumieniu
-zależności sięgające $270$ odchyleń standardowych, a~mapy dwuwymiarowe wyraźną
-nierównomierność rozkładu wartości słów. Strumień o~praktycznie idealnie zrównoważonym
-rozkładzie bitów może zatem jednocześnie zawierać silne i~łatwo wykrywalne zależności
-pomiędzy kolejnymi pozycjami. Pokazuje to, że test monobitowy, choć jest naturalnym
-pierwszym krokiem w~ocenie źródła losowości, bada wyłącznie rozkład brzegowy pojedynczych
-bitów i~jego pozytywny wynik nie stanowi podstawy do stwierdzenia poprawności generatora.
-Ocena jakości strumienia wymaga zastosowania metod badających strukturę czasową danych,
-przy czym różne metody mogą prowadzić do odmiennego uszeregowania badanych konfiguracji.
-
-\FloatBarrier
-
-\subsection{Wyniki dla 16 oscylatorów łączonych parami operacją XOR}
-
-W konfiguracji obejmującej szesnaście oscylatorów, których wyjścia łączone są parami
-operacją XOR, badanie odchylenia rozkładu przeprowadzono na strumieniu surowym, bez
-zastosowania wybielania. Wyniki zestawiono w~tabeli~\ref{tab:bias_ro16_xor}.
-
-\begin{table}[ht]
-    \centering
-    \caption{Wyniki badania odchylenia rozkładu dla 16 oscylatorów łączonych parami
-    operacją XOR}
-    \label{tab:bias_ro16_xor}
-    \small
-    \begin{tabular}{lr}
-        \toprule
-        Parametr & Wartość \\
-        \midrule
-        Długość serii            & $10\,485\,760$ \\
-        Liczba zer               & $5\,241\,014$ \\
-        Liczba jedynek           & $5\,244\,746$ \\
-        $P(0)$                   & $0{,}499822$ \\
-        $P(1)$                   & $0{,}500178$ \\
-        Bias $P(1)-0{,}5$        & $+0{,}000178$ \\
-        Średnia w $\{-1,+1\}$    & $+0{,}000356$ \\
-        $\sigma$                 & $1{,}54 \cdot 10^{-4}$ \\
-        Odchylenie w jednostkach $\sigma$ & $1{,}2$ \\
-        Wartość $p$              & $0{,}249115$ \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-Odnotowana przewaga jedynek nad zerami wynosi $3\,732$ bity, a~wartość biasu
-$+0{,}000178$, co odpowiada $1{,}2$ odchylenia standardowego. Wartość $p$ równa $0{,}249$
-znacznie przewyższa przyjęty poziom istotności, wobec czego test monobitowy nie daje
-podstaw do odrzucenia hipotezy o~zrównoważeniu strumienia.
-
-Wynik ten jest praktycznie identyczny z~uzyskanym dla konfiguracji z~ośmioma oscylatorami
-rozmieszczonymi ręcznie, gdzie bias wyniósł $+0{,}000155$, czyli $1{,}0$ odchylenia
-standardowego. Różnica między obiema wartościami mieści się w~granicach naturalnego
-rozrzutu i~nie pozwala stwierdzić, która konfiguracja jest w~tej metryce lepsza.
-Obserwacja ta wymaga komentarza, ponieważ na pierwszy rzut oka pozostaje w~sprzeczności
-z~oczekiwaniem teoretycznym. Połączenie dwóch niezależnych źródeł operacją XOR powinno
-prowadzić do zmniejszenia odchylenia w~sposób multiplikatywny: przy odchyleniach
-$\varepsilon_1$ oraz $\varepsilon_2$ odchylenie sygnału wynikowego wynosi
-$2\varepsilon_1\varepsilon_2$, wobec czego dla wartości rzędu tysięcznych części
-oczekiwane odchylenie po operacji XOR powinno być mniejsze o~kilka rzędów wielkości.
-
-Wyjaśnieniem tej rozbieżności jest fakt, że dla obu konfiguracji stwierdzone odchylenie
-znajduje się już na poziomie naturalnego rozrzutu statystycznego wyznaczonego długością
-serii. Odchylenie standardowe $\sigma \approx 1{,}54 \cdot 10^{-4}$ stanowi w~tym
-przypadku granicę czułości pomiaru: nawet gdyby operacja XOR zredukowała odchylenie
-rzeczywiste do wartości pomijalnie małej, zmierzony bias pozostałby na poziomie rzędu
-jednego $\sigma$, ponieważ wynikałby wówczas wyłącznie z~losowego rozrzutu liczby jedynek
-w~skończonej próbie. Test monobitowy nie jest zatem zdolny rozróżnić tych dwóch
-konfiguracji przy zastosowanej długości serii, a~stwierdzenie rzeczywistej poprawy
-wymagałoby zebrania danych o~kilka rzędów wielkości dłuższych.
-
-Niezależne potwierdzenie bardzo małego odchylenia dla omawianej konfiguracji przynosi
-natomiast wydajność wybielania metodą von Neumanna, omówiona w~podrozdziale dotyczącym
-autokorelacji. Udział bitów zachowanych po korekcji wyniósł $24{,}99\%$, a~więc
-praktycznie tyle, ile wynosi granica teoretyczna dla źródła nieobciążonego. Ponieważ
-udział par odrzucanych rośnie z~kwadratem odchylenia, wskaźnik ten jest czuły na bias
-i~jego wartość potwierdza, że rzeczywiste odchylenie strumienia było w~tej konfiguracji
-istotnie mniejsze, niż wskazuje sam wynik testu monobitowego.
-
-Podsumowując, trzy z~czterech badanych konfiguracji różnią się w~zakresie odchylenia
-rozkładu w~sposób jednoznaczny jedynie w~jednym przypadku: automatyczne rozmieszczenie
-oscylatorów prowadziło do odchylenia na poziomie $11$ odchyleń standardowych, natomiast
-wszystkie konfiguracje z~rozmieszczeniem ręcznym dają wyniki nierozróżnialne od źródła
-zrównoważonego. Decydującym czynnikiem w~tej metryce okazało się zatem rozproszenie
-struktur w~obrębie układu, a~nie liczba oscylatorów ani zastosowanie operacji XOR.
-
-\FloatBarrier
-
-\subsection{Wyniki dla 16 oscylatorów z wybielaniem metodą von Neumanna}
-
-Ostatni pomiar wykonano dla tej samej serii pomiarowej co poprzednio, poddanej wybielaniu
-metodą von Neumanna. Wyniki zestawiono w~tabeli~\ref{tab:bias_ro16_vn}.
-
-\begin{table}[ht]
-    \centering
-    \caption{Wyniki badania odchylenia rozkładu dla 16 oscylatorów łączonych parami
-    operacją XOR, po wybielaniu metodą von Neumanna}
-    \label{tab:bias_ro16_vn}
-    \small
-    \begin{tabular}{lr}
-        \toprule
-        Parametr & Wartość \\
-        \midrule
-        Długość serii            & $2\,620\,032$ \\
-        Liczba zer               & $1\,308\,483$ \\
-        Liczba jedynek           & $1\,311\,549$ \\
-        $P(0)$                   & $0{,}499415$ \\
-        $P(1)$                   & $0{,}500585$ \\
-        Bias $P(1)-0{,}5$        & $+0{,}000585$ \\
-        Średnia w $\{-1,+1\}$    & $+0{,}001170$ \\
-        $\sigma$                 & $3{,}09 \cdot 10^{-4}$ \\
-        Odchylenie w jednostkach $\sigma$ & $1{,}9$ \\
-        Wartość $p$              & $0{,}058203$ \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-Test monobitowy przy poziomie istotności $\alpha = 0{,}01$ nie daje podstaw do odrzucenia
-hipotezy o~zrównoważeniu strumienia, ponieważ wartość $p$ wynosi $0{,}058$. Wynik ten
-wymaga jednak uważniejszej interpretacji, gdyż w~ujęciu bezwzględnym wartość biasu
-wzrosła: z~$+0{,}000178$ dla strumienia surowego do $+0{,}000585$ po wybielaniu, a~więc
-ponad trzykrotnie. Jest to obserwacja sprzeczna z~przeznaczeniem zastosowanej metody,
-która ma odchylenie rozkładu usuwać, a~nie zwiększać.
-
-Zasadnicza część tej rozbieżności ma charakter pozorny i~wynika ze skrócenia serii.
-Wybielanie zredukowało długość strumienia do jednej czwartej, wobec czego odchylenie
-standardowe wzrosło dwukrotnie, do $\sigma \approx 3{,}09 \cdot 10^{-4}$. Wyrażone
-w~jednostkach naturalnego rozrzutu odchylenie wynosi zatem $1{,}9$ zamiast $1{,}2$,
-a~więc wzrost jest znacznie mniej wyraźny niż w~ujęciu bezwzględnym i~mieści się
-w~zakresie, jakiego można oczekiwać przy losowym rozrzucie. Porównywanie wartości biasu
-pomiędzy seriami o~różnej długości bez takiego przeliczenia prowadziłoby do błędnych
-wniosków, ponieważ każde skrócenie danych z~definicji zwiększa oczekiwaną wartość
-bezwzględną zmierzonego odchylenia.
-
-Pozostaje jednak pytanie, dlaczego wybielanie nie doprowadziło do wartości bliższej zeru,
-skoro metoda von Neumanna gwarantuje idealne zrównoważenie strumienia wyjściowego.
-Gwarancja ta obowiązuje wyłącznie przy założeniu wzajemnej niezależności kolejnych bitów
-strumienia wejściowego. Tymczasem analiza autokorelacji wykazała dla tej konfiguracji
-istnienie zależności w~zakresie małych opóźnień, przekraczających pięć odchyleń
-standardowych. Przy skorelowanym strumieniu wejściowym pary o~różnych wartościach
-przestają występować z~jednakowym prawdopodobieństwem, w~konsekwencji czego korekcja nie
-usuwa odchylenia w~pełni. Stwierdzone po wybielaniu odchylenie na poziomie dwóch
-odchyleń standardowych należy zatem traktować jako pośredni ślad zależności czasowych
-obecnych w~strumieniu surowym, a~nie jako niedoskonałość samej implementacji korekcji.
-
-Warto przy tym zauważyć, że mimo braku pełnego usunięcia odchylenia wybielanie
-poprawiło wynik pozostałych zastosowanych metod: mapy dwuwymiarowe wykazały spadek
-rozrzutu zliczeń z~około sześciu do niespełna trzech odchyleń standardowych, a~przebieg
-autokorelacji utracił uporządkowaną strukturę. Metoda von Neumanna okazała się więc
-skuteczna wobec tych odstępstw od losowości, których nie wykrywa test monobitowy,
-pozostając jednocześnie bez wyraźnego wpływu na samą wielkość odchylenia rozkładu, która
-w~konfiguracjach z~ręcznym rozmieszczeniem oscylatorów była już przed korekcją
-nierozróżnialna od naturalnego rozrzutu.
 
 \FloatBarrier
 

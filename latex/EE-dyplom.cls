@@ -747,3 +747,6 @@
 \usepackage{needspace}  % \Needspace
 \usepackage{graphicx}   % \resizebox
 \usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{circuitikz}
+\usetikzlibrary{decorations.pathreplacing}

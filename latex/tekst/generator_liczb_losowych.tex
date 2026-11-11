@@ -110,6 +110,66 @@ cyfrowych. Składa się z nieparzystej liczby inwerterów połączonych
 szeregowo w zamkniętą pętlę, gdzie wyjście ostatniego elementu jest
 podłączone do wejścia pierwszego.
 
+Przykładową strukturę pięciostopniowego oscylatora
+pierścieniowego przedstawiono na rysunku
+\ref{fig:oscylator-pierscieniowy}. Sygnał przechodzi
+kolejno przez wszystkie inwertery, a następnie wraca
+na wejście pierwszego stopnia, tworząc zamkniętą pętlę
+sprzężenia zwrotnego.
+
+\begin{figure}[htbp]
+\centering
+\begin{circuitikz}[
+    scale=0.8, transform shape,
+    every node/.style={font=\normalsize},
+    wire/.style={line width=1.1pt, color=blue!70!black},
+    en/.style={line width=1.1pt, color=red!70!black}
+]
+
+% Stopnie: NAND (z ENABLE) + inwertery
+\node[nand port] (G1) at (0,0)  {};
+\node[not port]  (G2) at (3.2,0) {};
+\node[not port]  (G3) at (6.4,0) {};
+\node[inner sep=2pt] (dots) at (9.4,0) {\huge$\cdots$};
+\node[not port]  (GN) at (12.4,0) {};
+
+% Połączenia między stopniami
+\draw[wire] (G1.out) -- (G2.in);
+\draw[wire] (G2.out) -- (G3.in);
+\draw[wire] (G3.out) -- (dots.west);
+\draw[wire] (dots.east) -- (GN.in);
+
+% Wyjście i pętla sprzężenia zwrotnego
+\draw[wire] (GN.out) -- ++(0.9,0) coordinate (tap) -- ++(1.1,0)
+    node[right] {$V_{\mathrm{OUT}}$};
+\fill[blue!70!black] (tap) circle (2pt);
+\coordinate (fbc) at (-1.6,2.3);
+\draw[wire, -{Stealth[length=2.5mm]}] (tap) |- (fbc) -- (fbc |- G1.in 1) -- (G1.in 1);
+\node[above] at (5.4,2.3) {sprzężenie zwrotne};
+
+% Sygnał ENABLE
+\draw[en, -{Stealth[length=2.5mm]}] ([xshift=-1.2cm] G1.in 2) -- (G1.in 2);
+\node[left, red!70!black] at ([xshift=-1.2cm] G1.in 2) {$EN$};
+
+% Opisy stopni
+\node[below=3pt] at (G1.south) {\strut $S_1$};
+\node[below=3pt] at (G2.south |- G1.south) {\strut $S_2$};
+\node[below=3pt] at (G3.south |- G1.south) {\strut $S_3$};
+\node[below=3pt] at (GN.south |- G1.south) {\strut $S_N$};
+
+% Nawias z liczbą stopni
+\draw[decorate, decoration={brace, amplitude=6pt, mirror}, thick]
+    (-1.0,-1.8) -- (13.4,-1.8)
+    node[midway, below=9pt, align=center]
+    {$N$ stopni ($N$ nieparzyste), \;
+     $f_{\mathrm{osc}} \approx \dfrac{1}{2N\,t_{pd}}$};
+
+\end{circuitikz}
+\caption{Schemat ideowy oscylatora pierścieniowego o $N$ stopniach.}
+\label{fig:oscylator-pierscieniowy}
+\end{figure}
+
+
 Zasada działania jest intuicyjna: sygnał logiczny krążący w pętli jest
 kolejno odwracany przez każdy inwerter. Ponieważ liczba inwerterów jest
 nieparzysta, układ nie może osiągnąć stabilnego stanu logicznego.
@@ -124,7 +184,7 @@ opóźnieniu propagacji $t_p$ okres oscylacji wynosi w przybliżeniu
 \end{equation}
 
 co oznacza, że częstotliwością można sterować liczbą elementów w pętli.
-Zależność ta jest jednak wyłącznie przybliżeniem wartości średniej; istotne
+Zależność ta jest jednak wyłącznie przybliżeniem wartości średniej, istotne
 z punktu widzenia generowania losowości jest to, że rzeczywisty okres
 poszczególnych cykli podlega fluktuacjom.
 
@@ -251,7 +311,7 @@ w architekturach zwielokrotnionych: jeżeli spośród $n$ zaimplementowanych
 oscylatorów efektywnie niezależnych pozostaje jedynie $k < n$, to entropia
 strumienia odpowiada $k$, a nie $n$ źródłom, przy niezmienionym zużyciu
 zasobów. Co istotne, synchronizacja nie musi objawiać się zmianą rozkładu
-zer i jedynek na wyjściu; ujawnia się natomiast jako korelacja między
+zer i jedynek na wyjściu, ujawnia się natomiast jako korelacja między
 strumieniami pochodzącymi z poszczególnych źródeł oraz jako struktura
 okresowa w strumieniu wypadkowym.
 
